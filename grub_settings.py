@@ -16,7 +16,98 @@ import os
 import sys
 import logging
 import shlex
+import locale
+import json
 from pathlib import Path
+
+# ... (logging setup is here) ...
+
+# ... (get_path function is here) ...
+
+def get_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    path = os.path.join(base_path, relative_path)
+    if os.path.exists(path):
+        return path
+        
+    if IS_FLATPAK:
+        flatpak_path = os.path.join("/app/share/grub-settings", relative_path)
+        if os.path.exists(flatpak_path):
+            return flatpak_path
+            
+    return path
+
+def restart_app(app):
+    """Uygulamayı yeniden başlat"""
+    logger.info("Restarting application...")
+    try:
+        app.quit()
+        # Küçük bir gecikme
+        import time
+        time.sleep(0.5)
+        
+        python = sys.executable
+        os.execl(python, python, *sys.argv)
+    except Exception as e:
+        logger.error(f"Restart failed: {e}")
+
+class ConfigManager:
+    """Uygulama ayarlarını yöneten sınıf"""
+    def __init__(self):
+        self.config_dir = Path.home() / ".config" / "grub-settings"
+        self.config_file = self.config_dir / "settings.json"
+        self.config = self._load_config()
+
+    def _load_config(self):
+        if not self.config_file.exists():
+            return {}
+        try:
+            with open(self.config_file, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logging.warning(f"Config yüklenemedi: {e}")
+            return {}
+
+    def save_config(self):
+        self.config_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(self.config_file, 'w') as f:
+                json.dump(self.config, f, indent=4)
+        except Exception as e:
+            logging.error(f"Config kaydedilemedi: {e}")
+
+    def get(self, key, default=None):
+        return self.config.get(key, default)
+
+    def set(self, key, value):
+        self.config[key] = value
+        self.save_config()
+
+# Global Config
+config_manager = ConfigManager()
+
+# i18n Initialization
+try:
+    locales_dir = get_path("locales")
+    saved_lang = config_manager.get("language", None)
+    
+    if saved_lang:
+        # Load user preference
+        lang_code = "tr" if "tr" in saved_lang else "en"
+        t = gettext.translation('grub-settings', localedir=locales_dir, languages=[lang_code])
+    else:
+        # Auto-detect
+        t = gettext.translation('grub-settings', localedir=locales_dir, fallback=True)
+        
+    t.install() # Installs _()
+except Exception as e:
+    logging.warning(f"i18n setup failed: {e}")
+    import builtins
+    builtins._ = lambda x: x
 
 # Logging yapılandırması
 log_dir = Path.home() / ".cache" / "grub-settings"
@@ -43,7 +134,7 @@ class PoliteAuthDialog(Gtk.Window):
             super().__init__()
             logger.info("DEBUG: PoliteAuthDialog initializing...")
             
-            self.set_title("İzin Gerekli 🌸")
+            self.set_title(_("Permission Required 🌸"))
             self.set_default_size(350, 300)
             self.set_resizable(False)
             self.set_modal(True)
@@ -70,19 +161,20 @@ class PoliteAuthDialog(Gtk.Window):
             main_box.append(icon_label)
             
             # Title
-            title = Gtk.Label(label="İzin Gerekli")
+            title = Gtk.Label(label=_("Permission Required"))
             title.add_css_class("title-2")
             main_box.append(title)
             
             # Body
-            body = Gtk.Label(label="Bu işlemi yapabilmek için yönetici iznine ihtiyacım var.\nRica etsem şifrenizi girer misiniz? 🥺")
+            body_text = _("I need administrator permission to perform this action.\nCould you please enter your password? 🥺")
+            body = Gtk.Label(label=body_text)
             body.set_justify(Gtk.Justification.CENTER)
             body.set_wrap(True)
             main_box.append(body)
             
             # Entry
             self.password_entry = Gtk.PasswordEntry()
-            self.password_entry.set_property("placeholder-text", "Sudo şifresi")
+            self.password_entry.set_property("placeholder-text", _("Sudo password"))
             self.password_entry.connect("activate", self.on_ok_clicked)
             self.password_entry.set_margin_top(8)
             self.password_entry.set_margin_bottom(8)
@@ -93,10 +185,10 @@ class PoliteAuthDialog(Gtk.Window):
             btn_box.set_halign(Gtk.Align.CENTER)
             btn_box.set_margin_top(8)
             
-            cancel_btn = Gtk.Button(label="Vazgeç")
+            cancel_btn = Gtk.Button(label=_("Cancel"))
             cancel_btn.connect("clicked", self.on_cancel_clicked)
             
-            ok_btn = Gtk.Button(label="Tamam")
+            ok_btn = Gtk.Button(label=_("OK"))
             ok_btn.add_css_class("suggested-action")
             ok_btn.connect("clicked", self.on_ok_clicked)
             
@@ -507,7 +599,7 @@ class TimingPage(Gtk.Box):
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         title_icon = Gtk.Label(label="⏱️")
         title_icon.add_css_class("title-1")
-        title = Gtk.Label(label="Zamanlama Ayarları")
+        title = Gtk.Label(label=_("Timing Settings"))
         title.add_css_class("title-1")
         title.set_halign(Gtk.Align.START)
         header_box.append(title_icon)
@@ -515,7 +607,7 @@ class TimingPage(Gtk.Box):
         content.append(header_box)
         
         # Açıklama
-        desc = Gtk.Label(label="Bilgisayar açıldığında GRUB menüsünün ne kadar süre görüneceğini ayarlayın.")
+        desc = Gtk.Label(label=_("Adjust how long the GRUB menu appears when the computer starts."))
         desc.add_css_class("dim-label")
         desc.set_halign(Gtk.Align.START)
         desc.set_wrap(True)
@@ -573,7 +665,8 @@ class TimingPage(Gtk.Box):
         # Menu visible
         style_row1 = Adw.ActionRow()
         style_row1.set_title("📋 Her Zaman Göster")
-        style_row1.set_subtitle("GRUB menüsü her açılışta tam olarak görünür")
+        style_row1.set_title(_("Show Menu"))
+        style_row1.set_subtitle(_("GRUB menu is fully visible on every boot"))
         style_row1.add_prefix(create_help_button("timeout_style", app.win))
         self.style_menu = Gtk.CheckButton()
         self.style_menu.set_active(current_style == "menu")
@@ -582,8 +675,8 @@ class TimingPage(Gtk.Box):
         
         # Hidden
         style_row2 = Adw.ActionRow()
-        style_row2.set_title("🙈 Gizli")
-        style_row2.set_subtitle("Shift tuşuna basılı tutarak gösterin")
+        style_row2.set_title(_("Hidden"))
+        style_row2.set_subtitle(_("Show by holding down the Shift key"))
         self.style_hidden = Gtk.CheckButton()
         self.style_hidden.set_group(self.style_menu)
         self.style_hidden.set_active(current_style == "hidden")
@@ -592,8 +685,8 @@ class TimingPage(Gtk.Box):
         
         # Countdown
         style_row3 = Adw.ActionRow()
-        style_row3.set_title("⏳ Geri Sayım")
-        style_row3.set_subtitle("Sadece kalan süre gösterilir")
+        style_row3.set_title(_("Countdown"))
+        style_row3.set_subtitle(_("Only the remaining time is shown"))
         self.style_countdown = Gtk.CheckButton()
         self.style_countdown.set_group(self.style_menu)
         self.style_countdown.set_active(current_style == "countdown")
@@ -678,14 +771,14 @@ class AppearancePage(Gtk.Box):
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         title_icon = Gtk.Label(label="🎨")
         title_icon.add_css_class("title-1")
-        title = Gtk.Label(label="Görünüm Ayarları")
+        title = Gtk.Label(label=_("Appearance Settings"))
         title.add_css_class("title-1")
         title.set_halign(Gtk.Align.START)
         header_box.append(title_icon)
         header_box.append(title)
         content.append(header_box)
         
-        desc = Gtk.Label(label="GRUB menüsünün görsel özelliklerini özelleştirin.")
+        desc = Gtk.Label(label=_("Customize the visual appearance of the GRUB menu."))
         desc.add_css_class("dim-label")
         desc.set_halign(Gtk.Align.START)
         desc.set_wrap(True)
@@ -720,7 +813,7 @@ class AppearancePage(Gtk.Box):
         self.preview_image.set_size_request(300, 169)
         self.preview_image.set_content_fit(Gtk.ContentFit.CONTAIN)
         
-        self.no_image_label = Gtk.Label(label="🖼️ Arkaplan resmi seçilmedi\nAşağıdaki butona tıklayarak resim seçin")
+        self.no_image_label = Gtk.Label(label=_("🖼️ No background image selected\nClick the button below to select an image"))
         self.no_image_label.add_css_class("dim-label")
         self.no_image_label.set_justify(Gtk.Justification.CENTER)
         
@@ -740,7 +833,7 @@ class AppearancePage(Gtk.Box):
         select_btn = Gtk.Button()
         select_btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         select_btn_content.append(Gtk.Label(label="📁"))
-        select_btn_content.append(Gtk.Label(label="Resim Seç"))
+        select_btn_content.append(Gtk.Label(label=_("Select Image")))
         select_btn.set_child(select_btn_content)
         select_btn.add_css_class("suggested-action")
         select_btn.add_css_class("pill")
@@ -749,7 +842,7 @@ class AppearancePage(Gtk.Box):
         remove_btn = Gtk.Button()
         remove_btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         remove_btn_content.append(Gtk.Label(label="🗑️"))
-        remove_btn_content.append(Gtk.Label(label="Kaldır"))
+        remove_btn_content.append(Gtk.Label(label=_("Remove")))
         remove_btn.set_child(remove_btn_content)
         remove_btn.add_css_class("destructive-action")
         remove_btn.add_css_class("pill")
@@ -768,7 +861,7 @@ class AppearancePage(Gtk.Box):
         res_group.set_description("GRUB menüsünün görüntüleneceği çözünürlük")
         
         res_row = Adw.ComboRow()
-        res_row.set_title("Çözünürlük Seçimi")
+        res_row.set_title(_("Screen Resolution"))
         res_row.set_subtitle("Ekran kartınızın desteklediği bir değer seçin")
         res_row.add_prefix(create_help_button("resolution", app.win))
         
@@ -909,14 +1002,14 @@ class SystemPage(Gtk.Box):
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         title_icon = Gtk.Label(label="💻")
         title_icon.add_css_class("title-1")
-        title = Gtk.Label(label="Sistem Ayarları")
+        title = Gtk.Label(label=_("System Settings"))
         title.add_css_class("title-1")
         title.set_halign(Gtk.Align.START)
         header_box.append(title_icon)
         header_box.append(title)
         content.append(header_box)
         
-        desc = Gtk.Label(label="İşletim sistemi seçimi ve dual-boot ayarlarını yapılandırın.")
+        desc = Gtk.Label(label=_("Configure operating system selection and dual-boot settings."))
         desc.add_css_class("dim-label")
         desc.set_halign(Gtk.Align.START)
         desc.set_wrap(True)
@@ -953,6 +1046,42 @@ class SystemPage(Gtk.Box):
         # Windows algılamayı başlat (arka planda)
         GLib.idle_add(self.detect_windows)
         
+        content.append(self.windows_group)
+        
+        # Windows algılamayı başlat (arka planda)
+        GLib.idle_add(self.detect_windows)
+        
+        # ============ DIL SEÇİMİ BÖLÜMÜ (Yeni) ============
+        lang_group = Adw.PreferencesGroup()
+        lang_group.set_title(_("Language Settings"))
+        lang_group.set_description(_("Select application language"))
+        
+        # Dil Seçimi
+        lang_row = Adw.ComboRow()
+        lang_row.set_title(_("Application Language"))
+        lang_row.set_subtitle(_("Changes require restart"))
+        lang_row.set_icon_name("preferences-desktop-locale-symbolic")
+        
+        lang_model = Gtk.StringList()
+        lang_model.append("System Default 🌍")
+        lang_model.append("English (en) 🇬🇧")
+        lang_model.append("Türkçe (tr) 🇹🇷")
+        lang_row.set_model(lang_model)
+        
+        # Mevcut seçili dili bul
+        current_lang = config_manager.get("language", "default")
+        if "tr" in current_lang:
+            lang_row.set_selected(2)
+        elif "en" in current_lang:
+            lang_row.set_selected(1)
+        else:
+            lang_row.set_selected(0)
+            
+        lang_row.connect("notify::selected", self.on_language_changed)
+        lang_group.add(lang_row)
+        
+        content.append(lang_group)
+
         # ============ VARSAYILAN OS BÖLÜMÜ ============
         # Default OS Group
         default_group = Adw.PreferencesGroup()
@@ -1001,8 +1130,8 @@ class SystemPage(Gtk.Box):
         prober_group.set_description("Diğer işletim sistemlerini GRUB menüsüne ekle")
         
         self.prober_switch = Adw.SwitchRow()
-        self.prober_switch.set_title("OS-Prober Etkin")
-        self.prober_switch.set_subtitle("Windows ve diğer sistemleri otomatik bul ve menüye ekle")
+        self.prober_switch.set_title(_("Show Other Operating Systems (OS Prober)"))
+        self.prober_switch.set_subtitle(_("Automatically detects Windows and other Linux distros."))
         self.prober_switch.add_prefix(create_help_button("os_prober", app.win))
         
         current_prober = app.grub_config.get("GRUB_DISABLE_OS_PROBER", "true")
@@ -1287,14 +1416,14 @@ class AdvancedPage(Gtk.Box):
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         title_icon = Gtk.Label(label="🔧")
         title_icon.add_css_class("title-1")
-        title = Gtk.Label(label="Gelişmiş Ayarlar")
+        title = Gtk.Label(label=_("Advanced Settings"))
         title.add_css_class("title-1")
         title.set_halign(Gtk.Align.START)
         header_box.append(title_icon)
         header_box.append(title)
         content.append(header_box)
         
-        desc = Gtk.Label(label="Kernel parametreleri ve açılış davranışını özelleştirin.")
+        desc = Gtk.Label(label=_("Customize kernel parameters and boot behavior."))
         desc.add_css_class("dim-label")
         desc.set_halign(Gtk.Align.START)
         desc.set_wrap(True)
@@ -1306,7 +1435,7 @@ class AdvancedPage(Gtk.Box):
         warning_box.add_css_class("warning-card")
         warning_box.set_margin_bottom(8)
         warning_icon = Gtk.Label(label="⚠️")
-        warning_label = Gtk.Label(label="Bu bölümdeki ayarlar sisteminizin açılışını etkileyebilir. Dikkatli olun!")
+        warning_label = Gtk.Label(label=_("Settings in this section may affect system boot. Be careful!"))
         warning_label.set_wrap(True)
         warning_box.append(warning_icon)
         warning_box.append(warning_label)
@@ -1320,7 +1449,7 @@ class AdvancedPage(Gtk.Box):
         display_group.set_description("Sistem başlarken ekranda ne gösterileceği")
         
         self.quiet_switch = Adw.SwitchRow()
-        self.quiet_switch.set_title("Sessiz Mod (quiet)")
+        self.quiet_switch.set_title(_("Quiet Boot (quiet)"))
         self.quiet_switch.set_subtitle("Teknik mesajları gizle, temiz açılış")
         self.quiet_switch.add_prefix(create_help_button("quiet", app.win))
         self.quiet_switch.set_active("quiet" in current_params)
@@ -1343,7 +1472,7 @@ class AdvancedPage(Gtk.Box):
         recovery_group.set_description("Sorun giderme ve kurtarma modu")
         
         self.recovery_switch = Adw.SwitchRow()
-        self.recovery_switch.set_title("Kurtarma Modu Menüsü")
+        self.recovery_switch.set_title(_("Show Recovery Mode"))
         self.recovery_switch.set_subtitle("GRUB'da recovery seçeneklerini göster")
         self.recovery_switch.add_prefix(create_help_button("recovery", app.win))
         
@@ -1366,7 +1495,7 @@ class AdvancedPage(Gtk.Box):
         custom_group.set_description("İleri düzey kullanıcılar için")
         
         self.custom_entry = Adw.EntryRow()
-        self.custom_entry.set_title("Ek Parametreler")
+        self.custom_entry.set_title(_("Kernel Parameters"))
         
         # Get custom params (exclude quiet and splash)
         custom_params = [p for p in current_params.split() if p not in ["quiet", "splash"]]
@@ -1422,7 +1551,7 @@ class GrubSettingsApp(Adw.Application):
     
     def do_activate(self):
         self.win = Adw.ApplicationWindow(application=self)
-        self.win.set_title("GRUB Ayarları")
+        self.win.set_title(_("GRUB Settings"))
         self.win.set_default_size(900, 700)
         self.win.set_size_request(700, 500)
         
@@ -1434,7 +1563,7 @@ class GrubSettingsApp(Adw.Application):
         
         title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         title_icon = Gtk.Label(label="⚙️")
-        title_label = Gtk.Label(label=f"GRUB Ayarları v{APP_VERSION} (Portable)")
+        title_label = Gtk.Label(label=f"GRUB Settings v{APP_VERSION} (Portable)")
         title_label.add_css_class("title")
         title_box.append(title_icon)
         title_box.append(title_label)
@@ -1443,14 +1572,14 @@ class GrubSettingsApp(Adw.Application):
         # Reload button
         reload_btn = Gtk.Button()
         reload_btn.set_icon_name("view-refresh-symbolic")
-        reload_btn.set_tooltip_text("Ayarları Yeniden Yükle")
+        reload_btn.set_tooltip_text(_("Reload Settings"))
         reload_btn.connect("clicked", self.on_reload)
         header.pack_start(reload_btn)
         
         # About button
         about_btn = Gtk.Button()
         about_btn.set_icon_name("help-about-symbolic")
-        about_btn.set_tooltip_text("Hakkında")
+        about_btn.set_tooltip_text(_("About"))
         about_btn.connect("clicked", self.on_about)
         header.pack_start(about_btn)
         
@@ -1458,7 +1587,7 @@ class GrubSettingsApp(Adw.Application):
         self.apply_btn = Gtk.Button()
         apply_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         apply_box.append(Gtk.Label(label="💾"))
-        apply_box.append(Gtk.Label(label="Değişiklikleri Uygula"))
+        apply_box.append(Gtk.Label(label=_("Apply Changes")))
         self.apply_btn.set_child(apply_box)
         self.apply_btn.add_css_class("suggested-action")
         self.apply_btn.connect("clicked", self.on_apply)
@@ -1480,7 +1609,7 @@ class GrubSettingsApp(Adw.Application):
         sidebar_box.add_css_class("sidebar")
         
         # Sidebar başlık
-        sidebar_title = Gtk.Label(label="Kategoriler")
+        sidebar_title = Gtk.Label(label=_("Categories"))
         sidebar_title.add_css_class("title-4")
         sidebar_title.set_margin_top(16)
         sidebar_title.set_margin_bottom(12)
@@ -1494,10 +1623,10 @@ class GrubSettingsApp(Adw.Application):
         self.menu_list.connect("row-selected", self.on_menu_selected)
         
         menu_items = [
-            ("⏱️", "Zamanlama", "Menü süresi ve görünürlük ayarları"),
-            ("🎨", "Görünüm", "Arkaplan resmi ve çözünürlük"),
-            ("💻", "Sistem", "Varsayılan OS ve dual-boot"),
-            ("🔧", "Gelişmiş", "Kernel parametreleri ve kurtarma")
+            ("⏱️", _("Timing"), _("Menu timeout and visibility settings")),
+            ("🎨", _("Appearance"), _("Background image and resolution")),
+            ("💻", _("System"), _("Default OS and dual-boot")),
+            ("🔧", _("Advanced"), _("Kernel parameters and recovery"))
         ]
         
         for icon, title, subtitle in menu_items:
@@ -1547,7 +1676,7 @@ class GrubSettingsApp(Adw.Application):
         status_bar.set_margin_bottom(8)
         
         status_icon = Gtk.Label(label="ℹ️")
-        status_text = Gtk.Label(label="Her ayarın yanındaki ❓ butonuna tıklayarak detaylı açıklama alabilirsiniz.")
+        status_text = Gtk.Label(label=_("Click the ❓ button next to each setting for detailed explanation."))
         status_text.add_css_class("dim-label")
         status_text.set_wrap(True)
         status_text.set_xalign(0)

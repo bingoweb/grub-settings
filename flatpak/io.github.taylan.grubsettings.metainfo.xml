@@ -4,28 +4,33 @@
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0</project_license>
   <name>Grub Settings</name>
+  <developer_name>Taylan Soylu</developer_name>
   <summary>A modern and polite GRUB customizer</summary>
   <description>
     <p>
       Grub Settings is a user-friendly tool to customize your GRUB bootloader.
-      It allows you to change the timeout, default entry, background image, and more.
+      It allows you to change the default operating system, timeout duration, background image, and more.
     </p>
-    <p>Features include:</p>
+    <p>Features:</p>
     <ul>
       <li>Change default OS and timeout duration</li>
-      <li>Custom background images and fonts</li>
+      <li>Custom background images and font settings</li>
       <li>Manage visibility of other operating systems (Windows, etc.)</li>
       <li>Polite and secure authentication dialog</li>
     </ul>
   </description>
   <launchable type="desktop-id">io.github.taylan.grubsettings.desktop</launchable>
+  <branding>
+    <color type="primary" scheme_preference="light">#FAFAFA</color>
+    <color type="primary" scheme_preference="dark">#242424</color>
+  </branding>
   <screenshots>
     <screenshot type="default">
       <caption>Main settings interface</caption>
-      <image>https://raw.githubusercontent.com/taylan/grub-settings/main/screenshots/main.png</image>
+      <image>https://raw.githubusercontent.com/bingoweb/grub-settings/master/screenshots/main.png</image>
     </screenshot>
   </screenshots>
-  <url type="homepage">https://github.com/taylan/grub-settings</url>
+  <url type="homepage">https://github.com/bingoweb/grub-settings</url>
   <releases>
     <release version="1.2" date="2025-12-13">
       <description>

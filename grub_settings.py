@@ -132,7 +132,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "1.2"
+APP_VERSION = "1.2.1"
 import shutil
 
 class PoliteAuthDialog(Gtk.Window):
@@ -1801,6 +1801,7 @@ class SettingsPage(Gtk.Box):
     def __init__(self, app):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=16)
         self.app = app
+        self._initializing = True  # Flag to prevent handlers during init
         self.set_margin_top(24)
         self.set_margin_bottom(24)
         self.set_margin_start(24)
@@ -1892,6 +1893,9 @@ class SettingsPage(Gtk.Box):
         
         scrolled.set_child(content)
         self.append(scrolled)
+        
+        # Mark initialization complete
+        self._initializing = False
     
     def _load_languages(self):
         """Load available languages from languages.json"""
@@ -1905,6 +1909,8 @@ class SettingsPage(Gtk.Box):
             return [{"code": "en", "name": "English", "native": "English", "flag": "🇬🇧"}]
     
     def on_language_changed(self, row, pspec):
+        if self._initializing:
+            return
         selected_idx = row.get_selected()
         if selected_idx < len(self.languages):
             new_lang = self.languages[selected_idx]['code']
@@ -1930,6 +1936,8 @@ class SettingsPage(Gtk.Box):
             restart_app(self.app)
     
     def on_theme_changed(self, row, pspec):
+        if self._initializing:
+            return
         selected_idx = row.get_selected()
         if selected_idx < len(self.theme_codes):
             new_theme = self.theme_codes[selected_idx]

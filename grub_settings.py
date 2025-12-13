@@ -2283,13 +2283,62 @@ class GrubSettingsApp(Adw.Application):
         dialog.present()
     
     def on_about(self, button):
-        dialog = Adw.AboutDialog()
-        dialog.set_application_name("GRUB Ayarları")
-        dialog.set_version(APP_VERSION)
-        dialog.set_developer_name("Linux Aracı")
-        dialog.set_comments("Ubuntu için kolay GRUB yapılandırma aracı.\n\nHer ayarın yanındaki yardım butonuna tıklayarak\ndetaylı açıklama alabilirsiniz.")
-        dialog.set_license_type(Gtk.License.GPL_3_0)
-        dialog.present(self.win)
+        about = Adw.AboutWindow(
+            transient_for=self.win,
+            application_name="GRUB Settings",
+            application_icon="io.github.taylan.grubsettings",
+            version=APP_VERSION,
+            developer_name="Taylan Soylu",
+            
+            # App Description
+            comments=_("""A modern, user-friendly GRUB bootloader configuration tool.
+
+Configure your GRUB settings easily without editing config files manually. Features include timeout settings, background images, default OS selection, kernel parameters, and more.
+
+Built with GTK4 and Libadwaita for a native Linux experience."""),
+            
+            # Website & Links
+            website="https://github.com/bingoweb/grub-settings",
+            issue_url="https://github.com/bingoweb/grub-settings/issues",
+            
+            # License
+            license_type=Gtk.License.GPL_3_0,
+            
+            # Credits
+            developers=[
+                "Taylan Soylu <taylansoylu@gmail.com>"
+            ],
+            designers=[
+                "Taylan Soylu"
+            ],
+            
+            # Copyright
+            copyright="© 2024 Taylan Soylu"
+        )
+        
+        # Add credits section with developer bio
+        about.add_credit_section(
+            _("About the Developer"),
+            [
+                "Taylan Soylu",
+                _("Elementary School Teacher by profession"),
+                _("Hobbyist developer driven by curiosity"),
+                _("Focused on Linux and open source"),
+                _("Building simple, reliable, and sustainable software")
+            ]
+        )
+        
+        # Add acknowledgments
+        about.add_acknowledgement_section(
+            _("Special Thanks"),
+            [
+                _("GNOME Project for GTK4 and Libadwaita"),
+                _("The Linux community"),
+                _("Open source contributors everywhere")
+            ]
+        )
+        
+        about.present()
     
     def on_apply(self, button):
         # Show confirmation

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-13 20:27+0300\n"
+"POT-Creation-Date: 2025-12-13 21:14+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,198 +17,456 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: grub_settings.py:137
+#: grub_settings.py:145
 msgid "Permission Required 🌸"
 msgstr ""
 
-#: grub_settings.py:164
+#: grub_settings.py:172
 msgid "Permission Required"
 msgstr ""
 
-#: grub_settings.py:169
+#: grub_settings.py:177
 msgid ""
 "I need administrator permission to perform this action.\n"
 "Could you please enter your password? 🥺"
 msgstr ""
 
-#: grub_settings.py:177
+#: grub_settings.py:185
 msgid "Sudo password"
 msgstr ""
 
-#: grub_settings.py:188
+#: grub_settings.py:196
 msgid "Cancel"
 msgstr ""
 
-#: grub_settings.py:191
+#: grub_settings.py:199
 msgid "OK"
 msgstr ""
 
-#: grub_settings.py:602
+#: grub_settings.py:610
 msgid "Timing Settings"
 msgstr ""
 
-#: grub_settings.py:610
+#: grub_settings.py:618
 msgid "Adjust how long the GRUB menu appears when the computer starts."
 msgstr ""
 
+#: grub_settings.py:626
+msgid "⏰ Timeout Duration"
+msgstr ""
+
+#: grub_settings.py:627
+msgid "Time to display GRUB menu (in seconds)"
+msgstr ""
+
+#: grub_settings.py:631
+msgid "Duration"
+msgstr ""
+
+#: grub_settings.py:632
+msgid "0 = Menu hidden, boots immediately"
+msgstr ""
+
 #: grub_settings.py:668
-msgid "Show Menu"
+msgid "👁️ Menu Visibility"
 msgstr ""
 
 #: grub_settings.py:669
+msgid "Choose how the GRUB menu is displayed"
+msgstr ""
+
+#: grub_settings.py:675
+msgid "Show Menu"
+msgstr ""
+
+#: grub_settings.py:676
 msgid "GRUB menu is fully visible on every boot"
 msgstr ""
 
-#: grub_settings.py:678
+#: grub_settings.py:685
 msgid "Hidden"
 msgstr ""
 
-#: grub_settings.py:679
+#: grub_settings.py:686
 msgid "Show by holding down the Shift key"
 msgstr ""
 
-#: grub_settings.py:688
+#: grub_settings.py:695
 msgid "Countdown"
 msgstr ""
 
-#: grub_settings.py:689
+#: grub_settings.py:696
 msgid "Only the remaining time is shown"
 msgstr ""
 
-#: grub_settings.py:774
+#: grub_settings.py:713
+msgid "Off"
+msgstr ""
+
+#: grub_settings.py:758 grub_settings.py:1682
+msgid "Advanced Settings"
+msgstr ""
+
+#: grub_settings.py:765 grub_settings.py:1689
+msgid "Customize kernel parameters and boot behavior."
+msgstr ""
+
+#: grub_settings.py:777 grub_settings.py:1701
+msgid "Settings in this section may affect system boot. Be careful!"
+msgstr ""
+
+#: grub_settings.py:787
+msgid "🖥️ Boot Display"
+msgstr ""
+
+#: grub_settings.py:788
+msgid "What to show on screen during boot"
+msgstr ""
+
+#: grub_settings.py:791 grub_settings.py:1715
+msgid "Quiet Boot (quiet)"
+msgstr ""
+
+#: grub_settings.py:792
+msgid "Hide technical messages, clean boot"
+msgstr ""
+
+#: grub_settings.py:798
+msgid "Boot Animation (splash)"
+msgstr ""
+
+#: grub_settings.py:799
+msgid "Beautiful boot screen with logo"
+msgstr ""
+
+#: grub_settings.py:810
+msgid "🛠️ Recovery Options"
+msgstr ""
+
+#: grub_settings.py:811
+msgid "Troubleshooting and recovery mode"
+msgstr ""
+
+#: grub_settings.py:814 grub_settings.py:1738
+msgid "Show Recovery Mode"
+msgstr ""
+
+#: grub_settings.py:815
+msgid "Show recovery options in GRUB"
+msgstr ""
+
+#: grub_settings.py:825
+msgid "💡 Tip"
+msgstr ""
+
+#: grub_settings.py:826
+msgid "Recovery mode can be a lifesaver if system fails to boot!"
+msgstr ""
+
+#: grub_settings.py:833
+msgid "⌨️ Custom Kernel Parameters"
+msgstr ""
+
+#: grub_settings.py:834
+msgid "For advanced users"
+msgstr ""
+
+#: grub_settings.py:837 grub_settings.py:1761
+msgid "Kernel Parameters"
+msgstr ""
+
+#: grub_settings.py:847
+msgid "Example parameters"
+msgstr ""
+
+#: grub_settings.py:851
+msgid "💾 Remember Last Selection"
+msgstr ""
+
+#: grub_settings.py:852
+msgid "Default to the last booted system"
+msgstr ""
+
+#: grub_settings.py:855
+msgid "Remember Last Selection"
+msgstr ""
+
+#: grub_settings.py:856
+msgid "The last used OS will be selected on next boot"
+msgstr ""
+
+#: grub_settings.py:922
 msgid "Appearance Settings"
 msgstr ""
 
-#: grub_settings.py:781
+#: grub_settings.py:929
 msgid "Customize the visual appearance of the GRUB menu."
 msgstr ""
 
-#: grub_settings.py:816
+#: grub_settings.py:937
+msgid "🖼️ Background Image"
+msgstr ""
+
+#: grub_settings.py:938
+msgid "Select a custom background image for the GRUB menu"
+msgstr ""
+
+#: grub_settings.py:942
+msgid "Supported Formats"
+msgstr ""
+
+#: grub_settings.py:943
+msgid "PNG, JPEG, TGA - Should match your screen resolution"
+msgstr ""
+
+#: grub_settings.py:964
 msgid ""
 "🖼️ No background image selected\n"
 "Click the button below to select an image"
 msgstr ""
 
-#: grub_settings.py:836
+#: grub_settings.py:984
 msgid "Select Image"
 msgstr ""
 
-#: grub_settings.py:845
+#: grub_settings.py:993
 msgid "Remove"
 msgstr ""
 
-#: grub_settings.py:864
-msgid "Screen Resolution"
+#: grub_settings.py:1008
+msgid "📺 Screen Resolution"
 msgstr ""
 
-#: grub_settings.py:1005
-msgid "System Settings"
+#: grub_settings.py:1009
+msgid "Resolution to display the GRUB menu"
 msgstr ""
 
 #: grub_settings.py:1012
-msgid "Configure operating system selection and dual-boot settings."
+msgid "Screen Resolution"
 msgstr ""
 
-#: grub_settings.py:1056
+#: grub_settings.py:1013
+msgid "Select a value supported by your graphics card"
+msgstr ""
+
+#: grub_settings.py:1020
 msgid "Language Settings"
 msgstr ""
 
-#: grub_settings.py:1057
+#: grub_settings.py:1021
 msgid "Select application language"
 msgstr ""
 
-#: grub_settings.py:1061
+#: grub_settings.py:1025
 msgid "Application Language"
 msgstr ""
 
-#: grub_settings.py:1062
+#: grub_settings.py:1026
 msgid "Changes require restart"
 msgstr ""
 
-#: grub_settings.py:1133
+#: grub_settings.py:1069
+msgid "🎨 Menu Colors"
+msgstr ""
+
+#: grub_settings.py:1070
+msgid "Customize GRUB menu colors (coming soon)"
+msgstr ""
+
+#: grub_settings.py:1073
+msgid "Theme Customization"
+msgstr ""
+
+#: grub_settings.py:1074
+msgid "This feature will be added in a future version"
+msgstr ""
+
+#: grub_settings.py:1099 grub_settings.py:1395
+msgid "Restart Required 🔄"
+msgstr ""
+
+#: grub_settings.py:1109 grub_settings.py:1407
+msgid "Language Changed"
+msgstr ""
+
+#: grub_settings.py:1113 grub_settings.py:1411
+msgid ""
+"To apply the new language, I need to make a tiny restart.\n"
+"Is that okay correctly? 🥺"
+msgstr ""
+
+#: grub_settings.py:1122 grub_settings.py:1420
+msgid "Later"
+msgstr ""
+
+#: grub_settings.py:1125 grub_settings.py:1423
+msgid "Restart Now"
+msgstr ""
+
+#: grub_settings.py:1157
+msgid "Select Background Image"
+msgstr ""
+
+#: grub_settings.py:1160
+msgid "Image Files (PNG, JPEG, TGA)"
+msgstr ""
+
+#: grub_settings.py:1242
+msgid "System Settings"
+msgstr ""
+
+#: grub_settings.py:1249
+msgid "Configure operating system selection and dual-boot settings."
+msgstr ""
+
+#: grub_settings.py:1257
+msgid "🪟 Windows Management"
+msgstr ""
+
+#: grub_settings.py:1258
+msgid "Add Windows Boot Manager to the GRUB menu"
+msgstr ""
+
+#: grub_settings.py:1262
+msgid "Windows Status"
+msgstr ""
+
+#: grub_settings.py:1263
+msgid "Detecting..."
+msgstr ""
+
+#: grub_settings.py:1277
+msgid "💡 Info"
+msgstr ""
+
+#: grub_settings.py:1278
+msgid "If OS-Prober cannot detect Windows, you can add it manually."
+msgstr ""
+
+#: grub_settings.py:1289
+msgid "🎯 Default Operating System"
+msgstr ""
+
+#: grub_settings.py:1290
+msgid "Which system should start when the timeout expires?"
+msgstr ""
+
+#: grub_settings.py:1293
+msgid "0 - First Option"
+msgstr ""
+
+#: grub_settings.py:1293
+msgid "1 - Second Option"
+msgstr ""
+
+#: grub_settings.py:1293
+msgid "2 - Third Option"
+msgstr ""
+
+#: grub_settings.py:1296
+msgid "Default System"
+msgstr ""
+
+#: grub_settings.py:1297
+msgid "Click refresh to load the menu"
+msgstr ""
+
+#: grub_settings.py:1304
+msgid "Load GRUB menu (requires root privileges)"
+msgstr ""
+
+#: grub_settings.py:1330
+msgid "🔍 OS Detection"
+msgstr ""
+
+#: grub_settings.py:1331
+msgid "Add other operating systems to the GRUB menu"
+msgstr ""
+
+#: grub_settings.py:1334
 msgid "Show Other Operating Systems (OS Prober)"
 msgstr ""
 
-#: grub_settings.py:1134
+#: grub_settings.py:1335
 msgid "Automatically detects Windows and other Linux distros."
 msgstr ""
 
-#: grub_settings.py:1419
-msgid "Advanced Settings"
+#: grub_settings.py:1346
+msgid "⚠️ Dual-boot Users"
 msgstr ""
 
-#: grub_settings.py:1426
-msgid "Customize kernel parameters and boot behavior."
+#: grub_settings.py:1347
+msgid "This must be enabled if you have Windows or another OS!"
 msgstr ""
 
-#: grub_settings.py:1438
-msgid "Settings in this section may affect system boot. Be careful!"
+#: grub_settings.py:1355
+msgid "📂 Menu Organization"
 msgstr ""
 
-#: grub_settings.py:1452
-msgid "Quiet Boot (quiet)"
+#: grub_settings.py:1356
+msgid "Display of old kernels and recovery options"
 msgstr ""
 
-#: grub_settings.py:1475
-msgid "Show Recovery Mode"
+#: grub_settings.py:1359
+msgid "Use Submenus"
 msgstr ""
 
-#: grub_settings.py:1498
-msgid "Kernel Parameters"
+#: grub_settings.py:1360
+msgid "Group old kernels and recovery options in a submenu"
 msgstr ""
 
-#: grub_settings.py:1554
+#: grub_settings.py:1818
 msgid "GRUB Settings"
 msgstr ""
 
-#: grub_settings.py:1575
+#: grub_settings.py:1839
 msgid "Reload Settings"
 msgstr ""
 
-#: grub_settings.py:1582
+#: grub_settings.py:1846
 msgid "About"
 msgstr ""
 
-#: grub_settings.py:1590
+#: grub_settings.py:1854
 msgid "Apply Changes"
 msgstr ""
 
-#: grub_settings.py:1612
+#: grub_settings.py:1876
 msgid "Categories"
 msgstr ""
 
-#: grub_settings.py:1626
+#: grub_settings.py:1890
 msgid "Timing"
 msgstr ""
 
-#: grub_settings.py:1626
+#: grub_settings.py:1890
 msgid "Menu timeout and visibility settings"
 msgstr ""
 
-#: grub_settings.py:1627
+#: grub_settings.py:1891
 msgid "Appearance"
 msgstr ""
 
-#: grub_settings.py:1627
+#: grub_settings.py:1891
 msgid "Background image and resolution"
 msgstr ""
 
-#: grub_settings.py:1628
+#: grub_settings.py:1892
 msgid "System"
 msgstr ""
 
-#: grub_settings.py:1628
+#: grub_settings.py:1892
 msgid "Default OS and dual-boot"
 msgstr ""
 
-#: grub_settings.py:1629
+#: grub_settings.py:1893
 msgid "Advanced"
 msgstr ""
 
-#: grub_settings.py:1629
+#: grub_settings.py:1893
 msgid "Kernel parameters and recovery"
 msgstr ""
 
-#: grub_settings.py:1679
+#: grub_settings.py:1943
 msgid "Click the ❓ button next to each setting for detailed explanation."
 msgstr ""

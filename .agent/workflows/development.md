@@ -14,13 +14,14 @@ Sen bir **Python uzmanı** ve **Linux yazılım geliştiricisi**sin. Bu proje:
 
 ## 📋 Her Önemli Değişiklik Sonrası
 
-### 1. Versiyon Yükseltme
-Her önemli değişiklik veya yenilik sonrası versiyonu küçük artırarak yükselt:
-
+### 1. Versiyon Yükseltme (Semantic Versioning)
 ```
-v1.2.0 → v1.2.1 (bug fix)
-v1.2.1 → v1.2.2 (minor improvement)
-v1.2.2 → v1.3.0 (new feature)
+0.x.x = Geliştirme aşaması (API değişebilir)
+1.0.0 = İlk stabil sürüm (production-ready)
+
+0.1.0 → 0.1.1 (bug fix)
+0.1.1 → 0.1.2 (minor improvement)
+0.1.2 → 0.2.0 (new feature)
 ```
 
 Versiyon numarası şurada güncellenmeli:
@@ -30,9 +31,20 @@ Versiyon numarası şurada güncellenmeli:
 ### 2. Commit ve Push
 ```bash
 git add .
-git commit -m "v1.2.1: [Değişiklik açıklaması]"
+git commit -m "v0.1.x: [Değişiklik açıklaması]"
 git push
 ```
+
+---
+
+## 📖 README Güncellemesi
+
+Belirli aralıklarla (özellikle yeni özellikler eklendiğinde) README.md'yi güncelle:
+
+1. **Yeni Özellikler:** Features bölümüne ekle
+2. **Ekran Görüntüleri:** Güncel screenshots ekle
+3. **Kurulum Talimatları:** Değişiklik varsa güncelle
+4. **Changelog:** Son değişiklikleri özetle
 
 ---
 
@@ -47,14 +59,14 @@ Stabil kabul edilen her sürümü GitHub'a release olarak yükle:
 // turbo
 2. Git tag oluştur:
 ```bash
-git tag -a v1.2.1 -m "v1.2.1 - [Açıklama]"
-git push origin v1.2.1
+git tag -a v0.1.0 -m "v0.1.0 - [Açıklama]"
+git push origin v0.1.0
 ```
 
 3. GitHub'da release oluştur:
 ```bash
-gh release create v1.2.1 \
-  --title "v1.2.1 - [Başlık]" \
+gh release create v0.1.0 \
+  --title "v0.1.0 - [Başlık]" \
   --notes "## Değişiklikler
 - [Değişiklik 1]
 - [Değişiklik 2]
@@ -69,7 +81,7 @@ chmod +x grub-settings
 4. PyInstaller ile build al ve release'e ekle:
 ```bash
 pyinstaller --onefile --clean --name "grub-settings" --add-data "assets:assets" --add-data "locales:locales" grub_settings.py
-gh release upload v1.2.1 dist/grub-settings
+gh release upload v0.1.0 dist/grub-settings
 ```
 
 ---
@@ -84,7 +96,7 @@ gh release upload v1.2.1 dist/grub-settings
 ```bash
 cd flathub_pr
 git add io.github.taylan.grubsettings.yml
-git commit -m "Update to v1.2.1"
+git commit -m "Update to v0.1.0"
 git push
 ```
 
@@ -114,6 +126,7 @@ Belirli aralıklarla (özellikle major sürümlerden önce):
 
 - [ ] Versiyon numarası güncellendi
 - [ ] metainfo.xml'de release eklendi
+- [ ] README.md güncellendi (yeni özellikler varsa)
 - [ ] Changelog yazıldı
 - [ ] Kod temizliği yapıldı
 - [ ] Test edildi

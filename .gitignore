@@ -1,0 +1,8 @@
+dist/
+build/
+__pycache__/
+.venv/
+*.log
+*.pyc
+.flatpak-info
+40_custom_windows

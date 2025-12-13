@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=GRUB Settings
+Comment=Advanced GRUB Configuration Tool
+Exec=/home/taylan/Masaüstü/test3/dist/grub-settings
+Icon=utilities-terminal
+Terminal=false
+Type=Application
+Categories=Settings;System;
+Keywords=grub;boot;loader;manager;

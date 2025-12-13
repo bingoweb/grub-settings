@@ -1,0 +1,2194 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+GRUB Ayarları - Ubuntu için gelişmiş GRUB yapılandırma aracı
+Her ayar için detaylı açıklamalar içerir
+
+Version: 1.1
+"""
+
+import gi
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+from gi.repository import Gtk, Adw, Gio, GdkPixbuf, GLib, Gdk
+import subprocess
+import os
+import sys
+import logging
+import shlex
+from pathlib import Path
+
+# Logging yapılandırması
+log_dir = Path.home() / ".cache" / "grub-settings"
+log_dir.mkdir(parents=True, exist_ok=True)
+log_file = log_dir / "app.log"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s: %(message)s',
+    handlers=[
+        logging.FileHandler(log_file),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+APP_VERSION = "1.2"
+import shutil
+
+class PoliteAuthDialog(Gtk.Window):
+    """Kibar ve şirin şifre isteme penceresi (Custom Window)"""
+    def __init__(self, parent=None):
+        try:
+            super().__init__()
+            logger.info("DEBUG: PoliteAuthDialog initializing...")
+            
+            self.set_title("İzin Gerekli 🌸")
+            self.set_default_size(350, 300)
+            self.set_resizable(False)
+            self.set_modal(True)
+            
+            if parent:
+                try:
+                    self.set_transient_for(parent)
+                    logger.info("DEBUG: Parent set successfully")
+                except Exception as e:
+                    logger.error(f"DEBUG: Failed to set parent: {e}")
+            
+            self._callback = None
+    
+            # Main Box
+            main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+            main_box.set_margin_top(24)
+            main_box.set_margin_bottom(24)
+            main_box.set_margin_start(24)
+            main_box.set_margin_end(24)
+            
+            # Icon
+            icon_label = Gtk.Label()
+            icon_label.set_markup("<span size='40000'>🔐</span>")
+            main_box.append(icon_label)
+            
+            # Title
+            title = Gtk.Label(label="İzin Gerekli")
+            title.add_css_class("title-2")
+            main_box.append(title)
+            
+            # Body
+            body = Gtk.Label(label="Bu işlemi yapabilmek için yönetici iznine ihtiyacım var.\nRica etsem şifrenizi girer misiniz? 🥺")
+            body.set_justify(Gtk.Justification.CENTER)
+            body.set_wrap(True)
+            main_box.append(body)
+            
+            # Entry
+            self.password_entry = Gtk.PasswordEntry()
+            self.password_entry.set_property("placeholder-text", "Sudo şifresi")
+            self.password_entry.connect("activate", self.on_ok_clicked)
+            self.password_entry.set_margin_top(8)
+            self.password_entry.set_margin_bottom(8)
+            main_box.append(self.password_entry)
+            
+            # Buttons
+            btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+            btn_box.set_halign(Gtk.Align.CENTER)
+            btn_box.set_margin_top(8)
+            
+            cancel_btn = Gtk.Button(label="Vazgeç")
+            cancel_btn.connect("clicked", self.on_cancel_clicked)
+            
+            ok_btn = Gtk.Button(label="Tamam")
+            ok_btn.add_css_class("suggested-action")
+            ok_btn.connect("clicked", self.on_ok_clicked)
+            
+            btn_box.append(cancel_btn)
+            btn_box.append(ok_btn)
+            main_box.append(btn_box)
+            
+            self.set_child(main_box)
+            logger.info("DEBUG: PoliteAuthDialog initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"CRITICAL: PoliteAuthDialog init failed: {e}", exc_info=True)
+
+    def set_callback(self, callback):
+        self._callback = callback
+
+    def on_ok_clicked(self, btn):
+        if self._callback:
+            self._callback(self, "ok")
+            
+    def on_cancel_clicked(self, btn):
+        if self._callback:
+            self._callback(self, "cancel")
+            
+    def get_password(self):
+        return self.password_entry.get_text()
+
+
+class GrubPaths:
+    """Dağıtımına göre GRUB yollarını ve komutlarını belirle"""
+    
+    def __init__(self):
+        self.distro_info = self._parse_os_release()
+        self.grub_file = "/etc/default/grub"
+        self.grub_cfg = self._detect_grub_cfg()
+        self.efi_path = self._detect_efi_path()
+        self.update_cmd = self._detect_update_command()
+        
+        logger.info(f"Dağıtım: {self.distro_info.get('ID', 'unknown')} ({self.distro_info.get('PRETTY_NAME', 'Unknown Linux')})")
+        logger.info(f"GRUB Config: {self.grub_cfg}")
+        logger.info(f"EFI Path: {self.efi_path}")
+        logger.info(f"Update Command: {self.update_cmd}")
+
+    def _parse_os_release(self):
+        """Standard /etc/os-release parsing"""
+        info = {}
+        try:
+            if os.path.exists("/etc/os-release"):
+                with open("/etc/os-release") as f:
+                    for line in f:
+                        if '=' in line:
+                            k, v = line.strip().split('=', 1)
+                            info[k] = v.strip('"')
+        except Exception as e:
+            logger.warning(f"OS release okunamadı: {e}")
+        return info
+
+    def _detect_grub_cfg(self):
+        # Bilinen yolları kontrol et
+        candidates = [
+            "/boot/grub/grub.cfg",      # Debian, Ubuntu, Arch, Linux Mint
+            "/boot/grub2/grub.cfg",     # Fedora, RHEL, SUSE, OpenMandriva
+            "/boot/efi/EFI/fedora/grub.cfg", # Fedora some configs
+            "/boot/efi/EFI/redhat/grub.cfg", # RHEL some configs
+        ]
+        
+        # 1. Dosya var mı kontrol et
+        for path in candidates:
+            if os.path.exists(path):
+                return path
+                
+        # 2. Bulunamadıysa varsayılanı döndür (Debian standardı)
+        return "/boot/grub/grub.cfg"
+
+    def _detect_efi_path(self):
+        candidates = ["/boot/efi", "/efi", "/boot"]
+        for path in candidates:
+            if os.path.exists(os.path.join(path, "EFI")):
+                return path
+        return "/boot/efi" # Varsayılan
+
+    def _detect_update_command(self):
+        # Dağıtım bazlı tahmin
+        distro_id = self.distro_info.get('ID', '').lower()
+        distro_like = self.distro_info.get('ID_LIKE', '').lower()
+        
+        # 1. update-grub (Debian/Ubuntu türevleri)
+        if shutil.which("update-grub"):
+            return "update-grub"
+            
+        # 2. grub-mkconfig / grub2-mkconfig
+        # Fedora/RHEL/SUSE genellikle grub2-mkconfig kullanır
+        if 'fedora' in distro_id or 'rhel' in distro_id or 'suse' in distro_id or \
+           'fedora' in distro_like or 'rhel' in distro_like or 'suse' in distro_like:
+            if shutil.which("grub2-mkconfig"):
+                return f"grub2-mkconfig -o {self.grub_cfg}"
+        
+        # Arch ve diğerleri genellikle grub-mkconfig kullanır
+        if shutil.which("grub-mkconfig"):
+            return f"grub-mkconfig -o {self.grub_cfg}"
+            
+        # Fallback: grub2-mkconfig varsa kullan (bazı custom distrolar)
+        if shutil.which("grub2-mkconfig"):
+            return f"grub2-mkconfig -o {self.grub_cfg}"
+            
+        return "update-grub" # En kötü durum fallback
+
+# Global instance
+PATHS = GrubPaths()
+GRUB_FILE = PATHS.grub_file
+GRUB_CFG_FILE = PATHS.grub_cfg
+
+
+import re
+
+def get_grub_menu_entries():
+    """GRUB menü girdilerini oku ve liste olarak döndür"""
+    entries = []
+    try:
+        # grub.cfg dosyasını okumaya çalış
+        result = subprocess.run(
+            ["pkexec", "cat", GRUB_CFG_FILE],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        if result.returncode == 0:
+            content = result.stdout
+            # menuentry 'Ubuntu' veya menuentry "Windows Boot Manager" formatlarını bul
+            pattern = r"menuentry\s+['\"]([^'\"]+)['\"]"
+            matches = re.findall(pattern, content)
+            # Sadece ana menü girdilerini al (submenu içindekiler hariç)
+            for match in matches:
+                # Recovery ve eski kernel'ları filtrele (isteğe bağlı)
+                if match not in entries:
+                    entries.append(match)
+    except subprocess.TimeoutExpired:
+        logger.warning("GRUB menü okuma zaman aşımına uğradı")
+    except Exception as e:
+        logger.warning(f"GRUB menü okunamadı: {e}")
+    
+    # Eğer okuma başarısız olursa varsayılan liste
+    if not entries:
+        entries = ["0 - İlk Seçenek", "1 - İkinci Seçenek", "2 - Üçüncü Seçenek"]
+    
+    return entries
+
+# Detaylı açıklamalar
+HELP_TEXTS = {
+    "timeout": """<b>Menü Bekleme Süresi Nedir?</b>
+
+Bilgisayarınız açıldığında GRUB menüsü görünür ve bu süre boyunca bekler.
+Bu süre içinde hangi işletim sistemini başlatacağınızı seçebilirsiniz.
+
+<b>Öneriler:</b>
+• <b>0 saniye:</b> Menü gösterilmez, direkt varsayılan sistem açılır
+• <b>3-5 saniye:</b> Hızlı açılış, gerektiğinde seçim yapabilirsiniz
+• <b>10+ saniye:</b> Rahat seçim için yeterli süre
+
+<i>💡 İpucu: Tek işletim sistemi kullanıyorsanız 0-3 saniye yeterlidir.</i>""",
+
+    "timeout_style": """<b>Menü Görünürlük Stili</b>
+
+<b>Her Zaman Göster:</b>
+Bilgisayar her açıldığında GRUB menüsü görünür.
+Çoklu işletim sistemi kullananlar için önerilir.
+
+<b>Gizli (Shift ile göster):</b>
+Menü normalde gizlidir. Shift tuşuna basılı tutarak gösterebilirsiniz.
+Tek sistem kullanıp hızlı açılış isteyenler için ideal.
+
+<b>Geri Sayım:</b>
+Sadece geri sayım gösterilir, tam menü görünmez.
+Minimalist görünüm isteyenler için.""",
+
+    "background": """<b>GRUB Arkaplan Resmi</b>
+
+GRUB menüsünün arka planına özel bir resim ekleyebilirsiniz.
+
+<b>Desteklenen formatlar:</b> PNG, JPEG, TGA
+
+<b>Önerilen boyut:</b> Ekran çözünürlüğünüzle aynı
+(örn: 1920x1080)
+
+<i>💡 İpucu: Koyu renkli resimler menü yazılarının okunabilirliğini artırır.</i>""",
+
+    "resolution": """<b>GRUB Ekran Çözünürlüğü</b>
+
+GRUB menüsünün hangi çözünürlükte görüneceğini belirler.
+
+<b>auto:</b> Ekran kartınızın desteklediği en iyi çözünürlük
+<b>1920x1080:</b> Full HD - Modern ekranlar için
+<b>1280x720:</b> HD - Eski sistemler için daha uyumlu
+
+<i>💡 İpucu: Arkaplan resmi kullanıyorsanız, resminizin boyutuyla aynı çözünürlüğü seçin.</i>""",
+
+    "default_os": """<b>Varsayılan İşletim Sistemi</b>
+
+Bekleme süresi dolduğunda hangi sistemin otomatik başlayacağını belirler.
+
+<b>Sıra numarası:</b>
+• 0 = Listedeki ilk sistem (genellikle Ubuntu)
+• 1 = İkinci sistem (genellikle Windows veya eski kernel)
+• 2 = Üçüncü sistem... vb.
+
+<i>💡 İpucu: GRUB menüsünde sıralamanızı kontrol edip numarayı belirleyin.</i>""",
+
+    "os_prober": """<b>İşletim Sistemi Algılama (OS-Prober)</b>
+
+Bu özellik açıkken, sisteminizdeki diğer işletim sistemleri
+(Windows, başka Linux dağıtımları vb.) otomatik olarak
+GRUB menüsüne eklenir.
+
+<b>Açık:</b> Diğer OS'lar menüde görünür
+<b>Kapalı:</b> Sadece bu Linux sistemi görünür
+
+<i>💡 İpucu: Dual-boot (Windows + Linux) kullanıyorsanız mutlaka açık olmalı!</i>""",
+
+    "quiet": """<b>Sessiz Mod (quiet)</b>
+
+Açılış sırasında kernel mesajlarının gösterilip gösterilmeyeceğini belirler.
+
+<b>Açık:</b> Teknik mesajlar gizlenir, temiz bir açılış ekranı
+<b>Kapalı:</b> Tüm sistem mesajları gösterilir (hata ayıklama için)
+
+<i>💡 İpucu: Normal kullanımda açık bırakın. Açılış sorunlarını teşhis etmek için kapatın.</i>""",
+
+    "splash": """<b>Açılış Animasyonu (splash)</b>
+
+Plymouth açılış animasyonunu gösterip göstermeyeceğini belirler.
+Bu, Ubuntu logosunun döndüğü veya ilerleme çubuğunun gösterildiği ekrandır.
+
+<b>Açık:</b> Güzel animasyonlu açılış ekranı
+<b>Kapalı:</b> Siyah ekranda metin tabanlı açılış
+
+<i>💡 İpucu: Görsel açılış için açık bırakın.</i>""",
+
+    "recovery": """<b>Kurtarma Modu Menüsü</b>
+
+GRUB menüsünde "Advanced options" altında kurtarma
+(recovery) seçeneklerinin gösterilip gösterilmeyeceği.
+
+<b>Açık:</b> Sorun çözme seçenekleri menüde görünür
+<b>Kapalı:</b> Menü daha temiz görünür
+
+<i>💡 İpucu: Acil durumlar için açık bırakmanız önerilir!</i>""",
+
+    "savedefault": """<b>Son Seçimi Hatırla</b>
+
+Bu özellik açıkken, en son başlattığınız işletim sistemi
+bir sonraki açılışta varsayılan olarak seçili gelir.
+
+<b>Örnek:</b> Windows'u başlattınız → Bilgisayarı yeniden başlattınız
+→ GRUB otomatik olarak Windows'u seçer
+
+<i>💡 İpucu: Farklı sistemler arasında sık geçiş yapıyorsanız çok kullanışlı!</i>""",
+
+    "submenu": """<b>Alt Menüleri Devre Dışı Bırak</b>
+
+Eski kernel'lar ve kurtarma modları normalde "Advanced options"
+alt menüsü altında gruplanır.
+
+<b>Alt menü açık:</b> Kompakt menü, alt menüden erişim
+<b>Alt menü kapalı:</b> Tüm seçenekler ana menüde listelenir
+
+<i>💡 İpucu: Eski kernel'lara sık erişiyorsanız kapatabilirsiniz.</i>"""
+}
+
+
+class GrubConfig:
+    """GRUB yapılandırma dosyasını okuma ve yazma"""
+    
+    def __init__(self):
+        self.config = {}
+        self.raw_content = ""
+        self.load()
+    
+    def load(self):
+        """GRUB ayarlarını oku"""
+        try:
+            if not os.path.exists(GRUB_FILE):
+                logger.error(f"GRUB dosyası bulunamadı: {GRUB_FILE}")
+                return False
+            
+            with open(GRUB_FILE, 'r', encoding='utf-8') as f:
+                self.raw_content = f.read()
+            
+            self.config.clear()
+            for line in self.raw_content.splitlines():
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip().strip('"').strip("'")
+                    self.config[key] = value
+            
+            logger.info(f"GRUB konfigürasyonu yüklendi: {len(self.config)} ayar")
+            return True
+        except PermissionError:
+            logger.error("GRUB dosyasını okumak için yetki yok")
+            return False
+        except Exception as e:
+            logger.error(f"GRUB dosyası okunamadı: {e}")
+            return False
+    
+    def get(self, key, default=""):
+        """Bir ayar değerini al"""
+        return self.config.get(key, default)
+    
+    def set(self, key, value):
+        """Bir ayar değerini ayarla"""
+        self.config[key] = str(value)
+        logger.debug(f"Ayar değiştirildi: {key} = {value}")
+    
+    def remove(self, key):
+        """Bir ayarı kaldır"""
+        if key in self.config:
+            del self.config[key]
+            logger.debug(f"Ayar kaldırıldı: {key}")
+    
+    def generate_config(self):
+        lines = []
+        processed_keys = set()
+        
+        for line in self.raw_content.splitlines():
+            stripped = line.strip()
+            
+            if not stripped or stripped.startswith('#'):
+                if stripped.startswith('#') and '=' in stripped:
+                    comment_content = stripped[1:].strip()
+                    if '=' in comment_content:
+                        key = comment_content.split('=', 1)[0].strip()
+                        if key in self.config and key not in processed_keys:
+                            value = self.config[key]
+                            if ' ' in str(value) or any(c in str(value) for c in ['$', '`', '"']):
+                                lines.append(f'{key}="{value}"')
+                            else:
+                                lines.append(f'{key}={value}')
+                            processed_keys.add(key)
+                            continue
+                lines.append(line)
+                continue
+            
+            if '=' in stripped:
+                key = stripped.split('=', 1)[0]
+                if key in self.config:
+                    value = self.config[key]
+                    if ' ' in str(value) or any(c in str(value) for c in ['$', '`', '"']):
+                        lines.append(f'{key}="{value}"')
+                    else:
+                        lines.append(f'{key}={value}')
+                    processed_keys.add(key)
+                else:
+                    lines.append(line)
+            else:
+                lines.append(line)
+        
+        for key, value in self.config.items():
+            if key not in processed_keys:
+                if ' ' in str(value) or any(c in str(value) for c in ['$', '`', '"']):
+                    lines.append(f'{key}="{value}"')
+                else:
+                    lines.append(f'{key}={value}')
+        
+        return '\n'.join(lines)
+
+
+def create_help_button(help_key, parent_window):
+    """Yardım butonu oluştur"""
+    btn = Gtk.Button()
+    btn.set_icon_name("dialog-question-symbolic")
+    btn.add_css_class("flat")
+    btn.add_css_class("circular")
+    btn.set_valign(Gtk.Align.CENTER)
+    btn.set_tooltip_text("Bu ayar hakkında bilgi al")
+    
+    def show_help(button):
+        dialog = Adw.MessageDialog.new(parent_window)
+        dialog.set_heading("ℹ️ Bilgi")
+        dialog.set_body_use_markup(True)
+        dialog.set_body(HELP_TEXTS.get(help_key, "Açıklama bulunamadı."))
+        dialog.add_response("ok", "Anladım")
+        dialog.present()
+    
+    btn.connect("clicked", show_help)
+    return btn
+
+
+class TimingPage(Gtk.Box):
+    """Zamanlama ayarları sayfası"""
+    
+    def __init__(self, app):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        self.app = app
+        self.set_margin_top(24)
+        self.set_margin_bottom(24)
+        self.set_margin_start(24)
+        self.set_margin_end(24)
+        
+        # Scrollable content
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_vexpand(True)
+        
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        
+        # Başlık
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        title_icon = Gtk.Label(label="⏱️")
+        title_icon.add_css_class("title-1")
+        title = Gtk.Label(label="Zamanlama Ayarları")
+        title.add_css_class("title-1")
+        title.set_halign(Gtk.Align.START)
+        header_box.append(title_icon)
+        header_box.append(title)
+        content.append(header_box)
+        
+        # Açıklama
+        desc = Gtk.Label(label="Bilgisayar açıldığında GRUB menüsünün ne kadar süre görüneceğini ayarlayın.")
+        desc.add_css_class("dim-label")
+        desc.set_halign(Gtk.Align.START)
+        desc.set_wrap(True)
+        content.append(desc)
+        
+        # Timeout Group
+        timeout_group = Adw.PreferencesGroup()
+        timeout_group.set_title("⏰ Bekleme Süresi")
+        timeout_group.set_description("GRUB menüsünün görünme süresi (saniye cinsinden)")
+        
+        # Timeout slider row
+        timeout_row = Adw.ActionRow()
+        timeout_row.set_title("Süre Ayarı")
+        timeout_row.set_subtitle("0 = Menü gösterilmez, direkt açılır")
+        timeout_row.add_prefix(create_help_button("timeout", app.win))
+        
+        slider_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        slider_box.set_valign(Gtk.Align.CENTER)
+        
+        self.timeout_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 30, 1)
+        self.timeout_scale.set_size_request(200, -1)
+        self.timeout_scale.add_mark(0, Gtk.PositionType.BOTTOM, "0")
+        self.timeout_scale.add_mark(5, Gtk.PositionType.BOTTOM, "5")
+        self.timeout_scale.add_mark(10, Gtk.PositionType.BOTTOM, "10")
+        self.timeout_scale.add_mark(30, Gtk.PositionType.BOTTOM, "30")
+        
+        current_timeout = 0
+        try:
+            current_timeout = int(app.grub_config.get("GRUB_TIMEOUT", "0"))
+        except (ValueError, TypeError):
+            pass
+        self.timeout_scale.set_value(min(current_timeout, 30))
+        
+        self.timeout_label = Gtk.Label()
+        self.timeout_label.set_width_chars(8)
+        self.timeout_label.add_css_class("title-3")
+        self.update_timeout_label(current_timeout)
+        
+        self.timeout_scale.connect("value-changed", self.on_timeout_changed)
+        
+        slider_box.append(self.timeout_scale)
+        slider_box.append(self.timeout_label)
+        timeout_row.add_suffix(slider_box)
+        
+        timeout_group.add(timeout_row)
+        content.append(timeout_group)
+        
+        # Menü Stili Group
+        style_group = Adw.PreferencesGroup()
+        style_group.set_title("👁️ Menü Görünürlüğü")
+        style_group.set_description("GRUB menüsünün nasıl gösterileceğini seçin")
+        
+        current_style = app.grub_config.get("GRUB_TIMEOUT_STYLE", "menu")
+        
+        # Menu visible
+        style_row1 = Adw.ActionRow()
+        style_row1.set_title("📋 Her Zaman Göster")
+        style_row1.set_subtitle("GRUB menüsü her açılışta tam olarak görünür")
+        style_row1.add_prefix(create_help_button("timeout_style", app.win))
+        self.style_menu = Gtk.CheckButton()
+        self.style_menu.set_active(current_style == "menu")
+        style_row1.add_suffix(self.style_menu)
+        style_row1.set_activatable_widget(self.style_menu)
+        
+        # Hidden
+        style_row2 = Adw.ActionRow()
+        style_row2.set_title("🙈 Gizli")
+        style_row2.set_subtitle("Shift tuşuna basılı tutarak gösterin")
+        self.style_hidden = Gtk.CheckButton()
+        self.style_hidden.set_group(self.style_menu)
+        self.style_hidden.set_active(current_style == "hidden")
+        style_row2.add_suffix(self.style_hidden)
+        style_row2.set_activatable_widget(self.style_hidden)
+        
+        # Countdown
+        style_row3 = Adw.ActionRow()
+        style_row3.set_title("⏳ Geri Sayım")
+        style_row3.set_subtitle("Sadece kalan süre gösterilir")
+        self.style_countdown = Gtk.CheckButton()
+        self.style_countdown.set_group(self.style_menu)
+        self.style_countdown.set_active(current_style == "countdown")
+        style_row3.add_suffix(self.style_countdown)
+        style_row3.set_activatable_widget(self.style_countdown)
+        
+        style_group.add(style_row1)
+        style_group.add(style_row2)
+        style_group.add(style_row3)
+        content.append(style_group)
+        
+        # Son seçimi hatırla
+        remember_group = Adw.PreferencesGroup()
+        remember_group.set_title("💾 Son Seçimi Hatırla")
+        remember_group.set_description("En son başlattığınız sistem varsayılan olsun")
+        
+        self.savedefault_switch = Adw.SwitchRow()
+        self.savedefault_switch.set_title("Son Seçimi Hatırla")
+        self.savedefault_switch.set_subtitle("Bir sonraki açılışta en son kullandığınız OS seçili gelir")
+        self.savedefault_switch.add_prefix(create_help_button("savedefault", app.win))
+        
+        current_default = app.grub_config.get("GRUB_DEFAULT", "0")
+        self.savedefault_switch.set_active(current_default == "saved")
+        self.savedefault_switch.connect("notify::active", lambda *a: app.mark_changed())
+        
+        remember_group.add(self.savedefault_switch)
+        content.append(remember_group)
+        
+        scrolled.set_child(content)
+        self.append(scrolled)
+    
+    def update_timeout_label(self, value):
+        if value == 0:
+            self.timeout_label.set_label("Kapalı")
+        else:
+            self.timeout_label.set_label(f"{int(value)} saniye")
+    
+    def on_timeout_changed(self, scale):
+        value = int(scale.get_value())
+        self.update_timeout_label(value)
+        self.app.mark_changed()
+    
+    def get_values(self):
+        style = "menu"
+        if self.style_hidden.get_active():
+            style = "hidden"
+        elif self.style_countdown.get_active():
+            style = "countdown"
+        
+        values = {
+            "GRUB_TIMEOUT": str(int(self.timeout_scale.get_value())),
+            "GRUB_TIMEOUT_STYLE": style
+        }
+        
+        if self.savedefault_switch.get_active():
+            values["GRUB_DEFAULT"] = "saved"
+            values["GRUB_SAVEDEFAULT"] = "true"
+        
+        return values
+
+
+class AppearancePage(Gtk.Box):
+    """Görünüm ayarları sayfası"""
+    
+    def __init__(self, app):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        self.app = app
+        self.set_margin_top(24)
+        self.set_margin_bottom(24)
+        self.set_margin_start(24)
+        self.set_margin_end(24)
+        
+        self.selected_background = None
+        
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_vexpand(True)
+        
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        
+        # Başlık
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        title_icon = Gtk.Label(label="🎨")
+        title_icon.add_css_class("title-1")
+        title = Gtk.Label(label="Görünüm Ayarları")
+        title.add_css_class("title-1")
+        title.set_halign(Gtk.Align.START)
+        header_box.append(title_icon)
+        header_box.append(title)
+        content.append(header_box)
+        
+        desc = Gtk.Label(label="GRUB menüsünün görsel özelliklerini özelleştirin.")
+        desc.add_css_class("dim-label")
+        desc.set_halign(Gtk.Align.START)
+        desc.set_wrap(True)
+        content.append(desc)
+        
+        # Background Group
+        bg_group = Adw.PreferencesGroup()
+        bg_group.set_title("🖼️ Arkaplan Resmi")
+        bg_group.set_description("GRUB menüsü için özel bir arka plan resmi seçin")
+        
+        # Info row
+        info_row = Adw.ActionRow()
+        info_row.set_title("Desteklenen Formatlar")
+        info_row.set_subtitle("PNG, JPEG, TGA - Ekran çözünürlüğünüzle aynı boyutta olması önerilir")
+        info_row.add_prefix(create_help_button("background", app.win))
+        bg_group.add(info_row)
+        
+        # Preview frame
+        preview_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        preview_container.set_margin_top(12)
+        preview_container.set_margin_bottom(12)
+        
+        self.preview_frame = Gtk.Frame()
+        self.preview_frame.set_size_request(-1, 180)
+        self.preview_frame.add_css_class("card")
+        
+        self.preview_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.preview_box.set_valign(Gtk.Align.CENTER)
+        self.preview_box.set_halign(Gtk.Align.CENTER)
+        
+        self.preview_image = Gtk.Picture()
+        self.preview_image.set_size_request(300, 169)
+        self.preview_image.set_content_fit(Gtk.ContentFit.CONTAIN)
+        
+        self.no_image_label = Gtk.Label(label="🖼️ Arkaplan resmi seçilmedi\nAşağıdaki butona tıklayarak resim seçin")
+        self.no_image_label.add_css_class("dim-label")
+        self.no_image_label.set_justify(Gtk.Justification.CENTER)
+        
+        self.preview_box.append(self.no_image_label)
+        self.preview_frame.set_child(self.preview_box)
+        preview_container.append(self.preview_frame)
+        
+        # Check existing
+        current_bg = app.grub_config.get("GRUB_BACKGROUND", "")
+        if current_bg and os.path.exists(current_bg):
+            self.set_preview_image(current_bg, mark_as_changed=False)
+        
+        # Buttons
+        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        button_box.set_halign(Gtk.Align.CENTER)
+        
+        select_btn = Gtk.Button()
+        select_btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        select_btn_content.append(Gtk.Label(label="📁"))
+        select_btn_content.append(Gtk.Label(label="Resim Seç"))
+        select_btn.set_child(select_btn_content)
+        select_btn.add_css_class("suggested-action")
+        select_btn.add_css_class("pill")
+        select_btn.connect("clicked", self.on_select_image)
+        
+        remove_btn = Gtk.Button()
+        remove_btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        remove_btn_content.append(Gtk.Label(label="🗑️"))
+        remove_btn_content.append(Gtk.Label(label="Kaldır"))
+        remove_btn.set_child(remove_btn_content)
+        remove_btn.add_css_class("destructive-action")
+        remove_btn.add_css_class("pill")
+        remove_btn.connect("clicked", self.on_remove_image)
+        
+        button_box.append(select_btn)
+        button_box.append(remove_btn)
+        preview_container.append(button_box)
+        
+        bg_group.add(preview_container)
+        content.append(bg_group)
+        
+        # Resolution Group
+        res_group = Adw.PreferencesGroup()
+        res_group.set_title("📺 Ekran Çözünürlüğü")
+        res_group.set_description("GRUB menüsünün görüntüleneceği çözünürlük")
+        
+        res_row = Adw.ComboRow()
+        res_row.set_title("Çözünürlük Seçimi")
+        res_row.set_subtitle("Ekran kartınızın desteklediği bir değer seçin")
+        res_row.add_prefix(create_help_button("resolution", app.win))
+        
+        resolutions = ["auto - Otomatik", "1920x1080 - Full HD", "1680x1050", "1600x900", 
+                       "1440x900", "1366x768 - HD", "1280x1024", "1280x720 - HD", 
+                       "1024x768", "800x600"]
+        res_model = Gtk.StringList.new(resolutions)
+        res_row.set_model(res_model)
+        
+        current_res = app.grub_config.get("GRUB_GFXMODE", "auto")
+        for i, r in enumerate(resolutions):
+            if current_res in r:
+                res_row.set_selected(i)
+                break
+        
+        self.res_row = res_row
+        self.resolutions = resolutions
+        res_group.add(res_row)
+        content.append(res_group)
+        
+        # Theme colors (bonus feature)
+        theme_group = Adw.PreferencesGroup()
+        theme_group.set_title("🎨 Menü Renkleri")
+        theme_group.set_description("GRUB menüsünün renklerini özelleştirin (yakında)")
+        
+        theme_info = Adw.ActionRow()
+        theme_info.set_title("Tema Özelleştirme")
+        theme_info.set_subtitle("Bu özellik gelecek sürümde eklenecek")
+        theme_info.set_sensitive(False)
+        theme_group.add(theme_info)
+        content.append(theme_group)
+        
+        scrolled.set_child(content)
+        self.append(scrolled)
+    
+    def set_preview_image(self, path, mark_as_changed=True):
+        """Önizleme resmini ayarla. mark_as_changed=False mevcut ayarı yüklerken kullanılır."""
+        try:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, 300, 169, True)
+            texture = Gdk.Texture.new_for_pixbuf(pixbuf)
+            self.preview_image.set_paintable(texture)
+            
+            if self.no_image_label.get_parent():
+                self.preview_box.remove(self.no_image_label)
+            if self.preview_image.get_parent() is None:
+                self.preview_box.append(self.preview_image)
+            
+            self.selected_background = path
+            if mark_as_changed:
+                self.app.mark_changed()
+        except Exception as e:
+            logger.warning(f"Resim yüklenemedi: {e}")
+    
+    def on_select_image(self, button):
+        dialog = Gtk.FileDialog.new()
+        dialog.set_title("Arkaplan Resmi Seç")
+        
+        filter_images = Gtk.FileFilter()
+        filter_images.set_name("Resim Dosyaları (PNG, JPEG, TGA)")
+        filter_images.add_mime_type("image/png")
+        filter_images.add_mime_type("image/jpeg")
+        filter_images.add_mime_type("image/x-tga")
+        filter_images.add_pattern("*.tga")
+        
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(filter_images)
+        dialog.set_filters(filters)
+        
+        dialog.open(self.app.win, None, self.on_file_selected)
+    
+    def on_file_selected(self, dialog, result):
+        try:
+            file = dialog.open_finish(result)
+            if file:
+                self.set_preview_image(file.get_path())
+        except GLib.Error:
+            # Kullanıcı iptal etti veya dosya seçilemedi
+            pass
+    
+    def on_remove_image(self, button):
+        if self.preview_image.get_parent():
+            self.preview_box.remove(self.preview_image)
+        if self.no_image_label.get_parent() is None:
+            self.preview_box.append(self.no_image_label)
+        self.selected_background = None
+        self.app.mark_changed()
+    
+    def get_values(self):
+        values = {}
+        
+        selected = self.res_row.get_selected()
+        if selected < len(self.resolutions):
+            res = self.resolutions[selected].split(" - ")[0].split()[0]
+            values["GRUB_GFXMODE"] = res
+        
+        if self.selected_background:
+            # Dosya zaten /boot/grub dizinindeyse kopyalamaya gerek yok
+            if self.selected_background.startswith("/boot/grub/"):
+                values["GRUB_BACKGROUND"] = self.selected_background
+            else:
+                # Yeni dosya - hedef yolu oluştur ve kopyalama için kaynak yolu sakla
+                ext = os.path.splitext(self.selected_background)[1].lower()
+                if ext == ".jpeg":
+                    ext = ".jpg"
+                values["GRUB_BACKGROUND"] = f"/boot/grub/background{ext}"
+                values["_ORIGINAL_BACKGROUND"] = self.selected_background
+            
+            # Resim varsa gfxterm zorunlu
+            values["GRUB_TERMINAL_OUTPUT"] = "gfxterm"
+        
+        return values
+
+
+class SystemPage(Gtk.Box):
+    """Sistem ayarları sayfası"""
+    
+    def __init__(self, app):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        self.app = app
+        self.set_margin_top(24)
+        self.set_margin_bottom(24)
+        self.set_margin_start(24)
+        self.set_margin_end(24)
+        
+        # Windows algılama bilgileri
+        self.windows_detected = False
+        self.windows_efi_path = None
+        self.efi_uuid = None
+        self.windows_in_grub = False
+        
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_vexpand(True)
+        
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        
+        # Başlık
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        title_icon = Gtk.Label(label="💻")
+        title_icon.add_css_class("title-1")
+        title = Gtk.Label(label="Sistem Ayarları")
+        title.add_css_class("title-1")
+        title.set_halign(Gtk.Align.START)
+        header_box.append(title_icon)
+        header_box.append(title)
+        content.append(header_box)
+        
+        desc = Gtk.Label(label="İşletim sistemi seçimi ve dual-boot ayarlarını yapılandırın.")
+        desc.add_css_class("dim-label")
+        desc.set_halign(Gtk.Align.START)
+        desc.set_wrap(True)
+        content.append(desc)
+        
+        # ============ WINDOWS ALGILAMA BÖLÜMÜ ============
+        self.windows_group = Adw.PreferencesGroup()
+        self.windows_group.set_title("🪟 Windows Yönetimi")
+        self.windows_group.set_description("Windows Boot Manager'ı GRUB menüsüne ekle")
+        
+        # Windows durum satırı
+        self.windows_status_row = Adw.ActionRow()
+        self.windows_status_row.set_title("Windows Durumu")
+        self.windows_status_row.set_subtitle("Algılama yapılıyor...")
+        
+        # Windows ekleme/kaldırma butonu
+        self.windows_action_btn = Gtk.Button()
+        self.windows_action_btn.set_valign(Gtk.Align.CENTER)
+        self.windows_action_btn.add_css_class("suggested-action")
+        self.windows_action_btn.add_css_class("pill")
+        self.windows_action_btn.connect("clicked", self.on_windows_action)
+        self.windows_status_row.add_suffix(self.windows_action_btn)
+        
+        self.windows_group.add(self.windows_status_row)
+        
+        # Bilgi satırı
+        self.windows_info_row = Adw.ActionRow()
+        self.windows_info_row.set_title("💡 Bilgi")
+        self.windows_info_row.set_subtitle("OS-Prober Windows'u algılayamazsa manuel ekleme yapabilirsiniz")
+        self.windows_group.add(self.windows_info_row)
+        
+        content.append(self.windows_group)
+        
+        # Windows algılamayı başlat (arka planda)
+        GLib.idle_add(self.detect_windows)
+        
+        # ============ VARSAYILAN OS BÖLÜMÜ ============
+        # Default OS Group
+        default_group = Adw.PreferencesGroup()
+        default_group.set_title("🎯 Varsayılan İşletim Sistemi")
+        default_group.set_description("Süre dolduğunda hangi sistem başlatılsın?")
+        
+        # Başlangıçta varsayılan liste kullan (pkexec bloke etmesin)
+        self.menu_entries = ["0 - İlk Seçenek", "1 - İkinci Seçenek", "2 - Üçüncü Seçenek"]
+        
+        self.default_combo = Adw.ComboRow()
+        self.default_combo.set_title("Varsayılan Sistem")
+        self.default_combo.set_subtitle("Menüyü yüklemek için yenile butonuna tıklayın")
+        self.default_combo.add_prefix(create_help_button("default_os", app.win))
+        
+        # Yenile butonu
+        refresh_btn = Gtk.Button()
+        refresh_btn.set_icon_name("view-refresh-symbolic")
+        refresh_btn.set_valign(Gtk.Align.CENTER)
+        refresh_btn.set_tooltip_text("GRUB menüsünü yükle (root yetkisi gerekir)")
+        refresh_btn.connect("clicked", self.on_refresh_menu)
+        self.default_combo.add_suffix(refresh_btn)
+        
+        # Menü girdilerini dropdown'a ekle
+        menu_model = Gtk.StringList.new(self.menu_entries)
+        self.default_combo.set_model(menu_model)
+        
+        # Mevcut ayarı seç
+        current_default = app.grub_config.get("GRUB_DEFAULT", "0")
+        self.saved_default = current_default
+        try:
+            if current_default != "saved":
+                default_index = int(current_default)
+                if 0 <= default_index < len(self.menu_entries):
+                    self.default_combo.set_selected(default_index)
+        except (ValueError, TypeError):
+            pass
+        
+        self.default_combo.connect("notify::selected", lambda *a: app.mark_changed())
+        
+        default_group.add(self.default_combo)
+        content.append(default_group)
+        
+        # OS Prober Group
+        prober_group = Adw.PreferencesGroup()
+        prober_group.set_title("🔍 İşletim Sistemi Algılama")
+        prober_group.set_description("Diğer işletim sistemlerini GRUB menüsüne ekle")
+        
+        self.prober_switch = Adw.SwitchRow()
+        self.prober_switch.set_title("OS-Prober Etkin")
+        self.prober_switch.set_subtitle("Windows ve diğer sistemleri otomatik bul ve menüye ekle")
+        self.prober_switch.add_prefix(create_help_button("os_prober", app.win))
+        
+        current_prober = app.grub_config.get("GRUB_DISABLE_OS_PROBER", "true")
+        self.prober_switch.set_active(current_prober.lower() == "false")
+        self.prober_switch.connect("notify::active", lambda *a: app.mark_changed())
+        
+        prober_group.add(self.prober_switch)
+        
+        # Warning for OS prober
+        prober_warning = Adw.ActionRow()
+        prober_warning.set_title("⚠️ Dual-boot kullanıyorsanız")
+        prober_warning.set_subtitle("Windows veya başka bir OS varsa bu seçenek mutlaka açık olmalı!")
+        prober_warning.add_css_class("warning")
+        prober_group.add(prober_warning)
+        
+        content.append(prober_group)
+        
+        # Submenu Group
+        submenu_group = Adw.PreferencesGroup()
+        submenu_group.set_title("📂 Menü Organizasyonu")
+        submenu_group.set_description("Eski kernel ve kurtarma seçeneklerinin gösterimi")
+        
+        self.submenu_switch = Adw.SwitchRow()
+        self.submenu_switch.set_title("Alt Menüleri Kullan")
+        self.submenu_switch.set_subtitle("Eski kernel'ları ve recovery'yi alt menüde grupla")
+        self.submenu_switch.add_prefix(create_help_button("submenu", app.win))
+        
+        current_submenu = app.grub_config.get("GRUB_DISABLE_SUBMENU", "")
+        self.submenu_switch.set_active(current_submenu.lower() != "true")
+        self.submenu_switch.connect("notify::active", lambda *a: app.mark_changed())
+        
+        submenu_group.add(self.submenu_switch)
+        content.append(submenu_group)
+        
+        scrolled.set_child(content)
+        self.append(scrolled)
+    
+    def detect_windows(self):
+        """Windows EFI dosyalarını ve GRUB durumunu algıla"""
+        try:
+            # Windows EFI dosyasını kontrol et
+            windows_efi = os.path.join(PATHS.efi_path, "EFI/Microsoft/Boot/bootmgfw.efi")
+            if os.path.exists(windows_efi):
+                self.windows_detected = True
+                self.windows_efi_path = windows_efi
+                
+                # EFI partition UUID'sini al
+                try:
+                    result = subprocess.run(
+                        ["findmnt", "-n", "-o", "UUID", PATHS.efi_path],
+                        capture_output=True, text=True, timeout=5
+                    )
+                    if result.returncode == 0 and result.stdout.strip():
+                        self.efi_uuid = result.stdout.strip()
+                except Exception as e:
+                    logger.warning(f"EFI UUID alınamadı: {e}")
+            
+            # GRUB'da Windows var mı kontrol et
+            custom_script = "/etc/grub.d/40_custom_windows"
+            if os.path.exists(custom_script):
+                self.windows_in_grub = True
+            else:
+                # grub.cfg'de de kontrol et
+                try:
+                    result = subprocess.run(
+                        ["pkexec", "grep", "-l", "Windows", GRUB_CFG_FILE],
+                        capture_output=True, text=True, timeout=10
+                    )
+                    self.windows_in_grub = result.returncode == 0
+                except Exception:
+                    pass
+            
+            # UI'ı güncelle
+            self.update_windows_ui()
+            
+        except Exception as e:
+            logger.error(f"Windows algılama hatası: {e}")
+            self.windows_status_row.set_subtitle("❌ Algılama hatası")
+        
+        return False  # GLib.idle_add için bir kez çalışsın
+    
+    def update_windows_ui(self):
+        """Windows bölümü UI'ını güncelle"""
+        if self.windows_detected:
+            if self.windows_in_grub:
+                self.windows_status_row.set_title("✅ Windows Algılandı ve Menüde")
+                self.windows_status_row.set_subtitle(f"EFI: {self.windows_efi_path}")
+                self.windows_action_btn.set_label("🗑️ Menüden Kaldır")
+                self.windows_action_btn.remove_css_class("suggested-action")
+                self.windows_action_btn.add_css_class("destructive-action")
+                self.windows_info_row.set_subtitle("Windows şu an GRUB menüsünde görünüyor")
+            else:
+                self.windows_status_row.set_title("🪟 Windows Algılandı (Menüde Değil)")
+                self.windows_status_row.set_subtitle(f"EFI: {self.windows_efi_path}")
+                self.windows_action_btn.set_label("➕ Menüye Ekle")
+                self.windows_action_btn.remove_css_class("destructive-action")
+                self.windows_action_btn.add_css_class("suggested-action")
+                self.windows_info_row.set_subtitle("Windows'u GRUB menüsüne eklemek için butona tıklayın")
+        else:
+            self.windows_status_row.set_title("❌ Windows Bulunamadı")
+            self.windows_status_row.set_subtitle(f"{PATHS.efi_path} bölümünde Windows boot dosyası yok")
+            self.windows_action_btn.set_label("🔍 Yeniden Tara")
+            self.windows_action_btn.remove_css_class("destructive-action")
+            self.windows_action_btn.remove_css_class("suggested-action")
+            self.windows_info_row.set_subtitle("Windows boot yöneticisi bulunamadı")
+    
+    def on_windows_action(self, button):
+        """Windows ekleme/kaldırma işlemi"""
+        if not self.windows_detected:
+            # Yeniden tara
+            self.windows_status_row.set_subtitle("🔄 Taranıyor...")
+            GLib.idle_add(self.detect_windows)
+            return
+        
+        if self.windows_in_grub:
+            # Menüden kaldır
+            self.remove_windows_from_grub()
+        else:
+            # Menüye ekle
+            self.add_windows_to_grub()
+    
+    def add_windows_to_grub(self):
+        """Windows'u GRUB menüsüne ekle"""
+        if not self.efi_uuid:
+            # UUID yoksa manuel al
+            dialog = Adw.MessageDialog.new(self.app.win)
+            dialog.set_heading("❌ EFI UUID Bulunamadı")
+            dialog.set_body("EFI partition UUID'si alınamadı. Lütfen manuel olarak deneyin.")
+            dialog.add_response("ok", "Tamam")
+            dialog.present()
+            return
+        
+        # GRUB script içeriği
+        script_content = f'''#!/bin/sh
+exec tail -n +3 $0
+# Windows Boot Manager - GRUB Ayarları tarafından eklendi
+
+menuentry "Windows Boot Manager" --class windows --class os {{
+    insmod part_gpt
+    insmod fat
+    search --no-floppy --fs-uuid --set=root {self.efi_uuid}
+    chainloader /EFI/Microsoft/Boot/bootmgfw.efi
+}}
+'''
+        
+        # Onay dialogu
+        confirm = Adw.MessageDialog.new(self.app.win)
+        confirm.set_heading("🪟 Windows'u GRUB'a Ekle")
+        confirm.set_body(f"Windows Boot Manager GRUB menüsüne eklenecek.\n\nEFI UUID: {self.efi_uuid}\n\nBu işlem root yetkisi gerektirir.")
+        confirm.add_response("cancel", "İptal")
+        confirm.add_response("add", "Ekle")
+        confirm.set_response_appearance("add", Adw.ResponseAppearance.SUGGESTED)
+        confirm.connect("response", self.on_add_windows_response, script_content)
+        confirm.present()
+    
+    def on_add_windows_response(self, dialog, response, script_content):
+        dialog.close()
+        if response != "add":
+            return
+            
+        self.app.require_auth(lambda: self.perform_add_windows(script_content))
+
+    def perform_add_windows(self, script_content):
+        # Script'i geçici dosyaya yaz
+        temp_file = "/tmp/40_custom_windows"
+        with open(temp_file, 'w') as f:
+            f.write(script_content)
+        
+        # Script (pkexec yok artık, sudo ile çalışacak)
+        cmd = f'''
+            cp {shlex.quote(temp_file)} /etc/grub.d/40_custom_windows && 
+            chmod +x /etc/grub.d/40_custom_windows && 
+            echo '✅ Windows script oluşturuldu' &&
+            echo '' &&
+            echo '🔄 GRUB güncelleniyor...' &&
+            {PATHS.update_cmd} 2>&1 &&
+            echo '' &&
+            echo '✅ İşlem tamamlandı!'
+        '''
+        
+        def on_done(success):
+            if success:
+                success_dialog = Adw.MessageDialog.new(self.app.win)
+                success_dialog.set_heading("✅ Başarılı")
+                success_dialog.set_body("Windows GRUB menüsüne eklendi.")
+                success_dialog.add_response("ok", "Tamam")
+                success_dialog.present()
+                self.detect_windows()
+        
+        self.app.show_terminal_dialog_custom(cmd, "Windows Ekleniyor", on_done)
+    
+    def remove_windows_from_grub(self):
+        """Windows'u GRUB menüsünden kaldır"""
+        confirm = Adw.MessageDialog.new(self.app.win)
+        confirm.set_heading("🗑️ Windows'u Menüden Kaldır")
+        confirm.set_body("Windows Boot Manager GRUB menüsünden kaldırılacak.\n\nWindows yine de UEFI menüsünden başlatılabilir.")
+        confirm.add_response("cancel", "İptal")
+        confirm.add_response("remove", "Kaldır")
+        confirm.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
+        confirm.connect("response", self.on_remove_windows_response)
+        confirm.present()
+    
+    def on_remove_windows_response(self, dialog, response):
+        dialog.close()
+        if response != "remove":
+            return
+            
+        self.app.require_auth(self.perform_remove_windows)
+
+    def perform_remove_windows(self):
+        # Script (pkexec yok)
+        cmd = f'''
+            rm -f /etc/grub.d/40_custom_windows && 
+            echo '✅ Windows script silindi' &&
+            echo '' &&
+            echo '🔄 GRUB güncelleniyor...' &&
+            {PATHS.update_cmd} 2>&1 &&
+            echo '' &&
+            echo '✅ İşlem tamamlandı!'
+        '''
+        
+        def on_done(success):
+            if success:
+                success_dialog = Adw.MessageDialog.new(self.app.win)
+                success_dialog.set_heading("✅ Başarılı")
+                success_dialog.set_body("Windows GRUB menüsünden kaldırıldı.")
+                success_dialog.add_response("ok", "Tamam")
+                success_dialog.present()
+                self.detect_windows()
+        
+        self.app.show_terminal_dialog_custom(cmd, "Windows Kaldırılıyor", on_done)
+    
+    def on_refresh_menu(self, button):
+        """GRUB menü girdilerini yükle"""
+        # Menü girdilerini al
+        entries = get_grub_menu_entries()
+        if entries and entries[0] != "0 - İlk Seçenek":
+            self.menu_entries = entries
+            menu_model = Gtk.StringList.new(self.menu_entries)
+            self.default_combo.set_model(menu_model)
+            self.default_combo.set_subtitle("GRUB menüsünden başlatılacak sistem")
+            
+            # Mevcut ayarı seç
+            try:
+                if self.saved_default != "saved":
+                    default_index = int(self.saved_default)
+                    if 0 <= default_index < len(self.menu_entries):
+                        self.default_combo.set_selected(default_index)
+            except (ValueError, TypeError):
+                pass
+    
+    def get_values(self):
+        values = {}
+        
+        values["GRUB_DEFAULT"] = str(self.default_combo.get_selected())
+        values["GRUB_DISABLE_OS_PROBER"] = "false" if self.prober_switch.get_active() else "true"
+        
+        if not self.submenu_switch.get_active():
+            values["GRUB_DISABLE_SUBMENU"] = "true"
+        
+        return values
+
+
+class AdvancedPage(Gtk.Box):
+    """Gelişmiş ayarlar sayfası"""
+    
+    def __init__(self, app):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        self.app = app
+        self.set_margin_top(24)
+        self.set_margin_bottom(24)
+        self.set_margin_start(24)
+        self.set_margin_end(24)
+        
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_vexpand(True)
+        
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        
+        # Başlık
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        title_icon = Gtk.Label(label="🔧")
+        title_icon.add_css_class("title-1")
+        title = Gtk.Label(label="Gelişmiş Ayarlar")
+        title.add_css_class("title-1")
+        title.set_halign(Gtk.Align.START)
+        header_box.append(title_icon)
+        header_box.append(title)
+        content.append(header_box)
+        
+        desc = Gtk.Label(label="Kernel parametreleri ve açılış davranışını özelleştirin.")
+        desc.add_css_class("dim-label")
+        desc.set_halign(Gtk.Align.START)
+        desc.set_wrap(True)
+        content.append(desc)
+        
+        # Warning
+        warning_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        warning_box.add_css_class("card")
+        warning_box.add_css_class("warning-card")
+        warning_box.set_margin_bottom(8)
+        warning_icon = Gtk.Label(label="⚠️")
+        warning_label = Gtk.Label(label="Bu bölümdeki ayarlar sisteminizin açılışını etkileyebilir. Dikkatli olun!")
+        warning_label.set_wrap(True)
+        warning_box.append(warning_icon)
+        warning_box.append(warning_label)
+        content.append(warning_box)
+        
+        current_params = app.grub_config.get("GRUB_CMDLINE_LINUX_DEFAULT", "quiet splash")
+        
+        # Boot Display Group
+        display_group = Adw.PreferencesGroup()
+        display_group.set_title("🖥️ Açılış Görünümü")
+        display_group.set_description("Sistem başlarken ekranda ne gösterileceği")
+        
+        self.quiet_switch = Adw.SwitchRow()
+        self.quiet_switch.set_title("Sessiz Mod (quiet)")
+        self.quiet_switch.set_subtitle("Teknik mesajları gizle, temiz açılış")
+        self.quiet_switch.add_prefix(create_help_button("quiet", app.win))
+        self.quiet_switch.set_active("quiet" in current_params)
+        self.quiet_switch.connect("notify::active", lambda *a: app.mark_changed())
+        
+        self.splash_switch = Adw.SwitchRow()
+        self.splash_switch.set_title("Açılış Animasyonu (splash)")
+        self.splash_switch.set_subtitle("Ubuntu logolu güzel açılış ekranı")
+        self.splash_switch.add_prefix(create_help_button("splash", app.win))
+        self.splash_switch.set_active("splash" in current_params)
+        self.splash_switch.connect("notify::active", lambda *a: app.mark_changed())
+        
+        display_group.add(self.quiet_switch)
+        display_group.add(self.splash_switch)
+        content.append(display_group)
+        
+        # Recovery Group
+        recovery_group = Adw.PreferencesGroup()
+        recovery_group.set_title("🛠️ Kurtarma Seçenekleri")
+        recovery_group.set_description("Sorun giderme ve kurtarma modu")
+        
+        self.recovery_switch = Adw.SwitchRow()
+        self.recovery_switch.set_title("Kurtarma Modu Menüsü")
+        self.recovery_switch.set_subtitle("GRUB'da recovery seçeneklerini göster")
+        self.recovery_switch.add_prefix(create_help_button("recovery", app.win))
+        
+        current_recovery = app.grub_config.get("GRUB_DISABLE_RECOVERY", "")
+        self.recovery_switch.set_active(current_recovery.lower() != "true")
+        self.recovery_switch.connect("notify::active", lambda *a: app.mark_changed())
+        
+        recovery_group.add(self.recovery_switch)
+        
+        recovery_tip = Adw.ActionRow()
+        recovery_tip.set_title("💡 İpucu")
+        recovery_tip.set_subtitle("Sistem açılmazsa recovery modu hayat kurtarıcı olabilir!")
+        recovery_group.add(recovery_tip)
+        
+        content.append(recovery_group)
+        
+        # Custom Parameters
+        custom_group = Adw.PreferencesGroup()
+        custom_group.set_title("⌨️ Özel Kernel Parametreleri")
+        custom_group.set_description("İleri düzey kullanıcılar için")
+        
+        self.custom_entry = Adw.EntryRow()
+        self.custom_entry.set_title("Ek Parametreler")
+        
+        # Get custom params (exclude quiet and splash)
+        custom_params = [p for p in current_params.split() if p not in ["quiet", "splash"]]
+        self.custom_entry.set_text(" ".join(custom_params))
+        self.custom_entry.connect("changed", lambda *a: app.mark_changed())
+        
+        custom_group.add(self.custom_entry)
+        
+        custom_info = Adw.ActionRow()
+        custom_info.set_title("Örnek parametreler")
+        custom_info.set_subtitle("nvidia-drm.modeset=1, nomodeset, acpi=off")
+        custom_group.add(custom_info)
+        
+        content.append(custom_group)
+        
+        scrolled.set_child(content)
+        self.append(scrolled)
+    
+    def get_values(self):
+        params = []
+        
+        if self.quiet_switch.get_active():
+            params.append("quiet")
+        if self.splash_switch.get_active():
+            params.append("splash")
+        
+        custom = self.custom_entry.get_text().strip()
+        if custom:
+            params.extend(custom.split())
+        
+        values = {
+            "GRUB_CMDLINE_LINUX_DEFAULT": " ".join(params)
+        }
+        
+        if not self.recovery_switch.get_active():
+            values["GRUB_DISABLE_RECOVERY"] = "true"
+        
+        return values
+
+
+class GrubSettingsApp(Adw.Application):
+    """Ana uygulama sınıfı"""
+    
+    def __init__(self):
+        super().__init__(application_id="org.grubsettings.app")
+        self.grub_config = GrubConfig()
+        self.grub_config.load()
+        
+        self.cached_password = None  # Sudo şifresi için önbellek
+        
+        self.has_changes = False
+        self.win = None
+    
+    def do_activate(self):
+        self.win = Adw.ApplicationWindow(application=self)
+        self.win.set_title("GRUB Ayarları")
+        self.win.set_default_size(900, 700)
+        self.win.set_size_request(700, 500)
+        
+        # Ana box
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        
+        # Header
+        header = Adw.HeaderBar()
+        
+        title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        title_icon = Gtk.Label(label="⚙️")
+        title_label = Gtk.Label(label=f"GRUB Ayarları v{APP_VERSION} (Portable)")
+        title_label.add_css_class("title")
+        title_box.append(title_icon)
+        title_box.append(title_label)
+        header.set_title_widget(title_box)
+        
+        # Reload button
+        reload_btn = Gtk.Button()
+        reload_btn.set_icon_name("view-refresh-symbolic")
+        reload_btn.set_tooltip_text("Ayarları Yeniden Yükle")
+        reload_btn.connect("clicked", self.on_reload)
+        header.pack_start(reload_btn)
+        
+        # About button
+        about_btn = Gtk.Button()
+        about_btn.set_icon_name("help-about-symbolic")
+        about_btn.set_tooltip_text("Hakkında")
+        about_btn.connect("clicked", self.on_about)
+        header.pack_start(about_btn)
+        
+        # Apply button
+        self.apply_btn = Gtk.Button()
+        apply_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        apply_box.append(Gtk.Label(label="💾"))
+        apply_box.append(Gtk.Label(label="Değişiklikleri Uygula"))
+        self.apply_btn.set_child(apply_box)
+        self.apply_btn.add_css_class("suggested-action")
+        self.apply_btn.connect("clicked", self.on_apply)
+        self.apply_btn.set_sensitive(False)
+        header.pack_end(self.apply_btn)
+        
+        main_box.append(header)
+        
+        # Ana içerik kutusu - yatay bölünmüş
+        content_paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        content_paned.set_vexpand(True)
+        content_paned.set_shrink_start_child(False)
+        content_paned.set_shrink_end_child(False)
+        content_paned.set_resize_start_child(False)
+        
+        # Sidebar
+        sidebar_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        sidebar_box.set_size_request(220, -1)
+        sidebar_box.add_css_class("sidebar")
+        
+        # Sidebar başlık
+        sidebar_title = Gtk.Label(label="Kategoriler")
+        sidebar_title.add_css_class("title-4")
+        sidebar_title.set_margin_top(16)
+        sidebar_title.set_margin_bottom(12)
+        sidebar_title.set_margin_start(16)
+        sidebar_title.set_halign(Gtk.Align.START)
+        sidebar_box.append(sidebar_title)
+        
+        self.menu_list = Gtk.ListBox()
+        self.menu_list.add_css_class("navigation-sidebar")
+        self.menu_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self.menu_list.connect("row-selected", self.on_menu_selected)
+        
+        menu_items = [
+            ("⏱️", "Zamanlama", "Menü süresi ve görünürlük ayarları"),
+            ("🎨", "Görünüm", "Arkaplan resmi ve çözünürlük"),
+            ("💻", "Sistem", "Varsayılan OS ve dual-boot"),
+            ("🔧", "Gelişmiş", "Kernel parametreleri ve kurtarma")
+        ]
+        
+        for icon, title, subtitle in menu_items:
+            row = Adw.ActionRow()
+            row.set_title(f"{icon}  {title}")
+            row.set_subtitle(subtitle)
+            self.menu_list.append(row)
+        
+        scrolled_sidebar = Gtk.ScrolledWindow()
+        scrolled_sidebar.set_child(self.menu_list)
+        scrolled_sidebar.set_vexpand(True)
+        sidebar_box.append(scrolled_sidebar)
+        
+        # Version info
+        version_label = Gtk.Label(label=f"v{APP_VERSION}")
+        version_label.add_css_class("dim-label")
+        version_label.set_margin_top(8)
+        version_label.set_margin_bottom(12)
+        sidebar_box.append(version_label)
+        
+        content_paned.set_start_child(sidebar_box)
+        
+        # İçerik alanı
+        self.stack = Gtk.Stack()
+        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        self.stack.set_transition_duration(200)
+        
+        self.timing_page = TimingPage(self)
+        self.appearance_page = AppearancePage(self)
+        self.system_page = SystemPage(self)
+        self.advanced_page = AdvancedPage(self)
+        
+        self.stack.add_named(self.timing_page, "timing")
+        self.stack.add_named(self.appearance_page, "appearance")
+        self.stack.add_named(self.system_page, "system")
+        self.stack.add_named(self.advanced_page, "advanced")
+        
+        content_paned.set_end_child(self.stack)
+        
+        main_box.append(content_paned)
+        
+        # Status bar
+        status_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        status_bar.set_margin_start(16)
+        status_bar.set_margin_end(16)
+        status_bar.set_margin_top(8)
+        status_bar.set_margin_bottom(8)
+        
+        status_icon = Gtk.Label(label="ℹ️")
+        status_text = Gtk.Label(label="Her ayarın yanındaki ❓ butonuna tıklayarak detaylı açıklama alabilirsiniz.")
+        status_text.add_css_class("dim-label")
+        status_text.set_wrap(True)
+        status_text.set_xalign(0)
+        status_text.set_hexpand(True)
+        
+        status_bar.append(status_icon)
+        status_bar.append(status_text)
+        
+        main_box.append(Gtk.Separator())
+        main_box.append(status_bar)
+        
+        self.win.set_content(main_box)
+        
+        self.menu_list.select_row(self.menu_list.get_row_at_index(0))
+        
+        self.load_css()
+        self.win.present()
+    
+    def load_css(self):
+        """Gelişmiş CSS stillerini yükle"""
+        css_provider = Gtk.CssProvider()
+        css = """
+        /* Sidebar navigasyon */
+        .navigation-sidebar row {
+            padding: 14px 16px;
+            margin: 4px 8px;
+            border-radius: 12px;
+            transition: all 200ms ease;
+        }
+        
+        .navigation-sidebar row:hover {
+            background: alpha(@accent_bg_color, 0.3);
+        }
+        
+        .navigation-sidebar row:selected {
+            background: @accent_bg_color;
+            color: @accent_fg_color;
+        }
+        
+        /* Başlıklar */
+        .title-1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        
+        .title-3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: @accent_color;
+        }
+        
+        .title-4 {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: alpha(@theme_fg_color, 0.6);
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background: alpha(@card_bg_color, 0.4);
+            border-right: 1px solid alpha(@borders, 0.3);
+        }
+        
+        /* Kartlar ve kutular */
+        .card {
+            background: alpha(@card_bg_color, 0.9);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px alpha(black, 0.1);
+        }
+        
+        /* Uyarı kartı */
+        .warning-card {
+            background: linear-gradient(135deg, alpha(@warning_bg_color, 0.15), alpha(@warning_bg_color, 0.25));
+            border: 1px solid alpha(@warning_color, 0.4);
+            padding: 14px 18px;
+            border-radius: 12px;
+        }
+        
+        /* Haplik butonlar */
+        .pill {
+            border-radius: 999px;
+            padding: 10px 24px;
+            font-weight: 500;
+        }
+        
+        /* Önizleme çerçevesi */
+        .preview-frame {
+            background: alpha(@card_bg_color, 0.5);
+            border: 2px dashed alpha(@borders, 0.5);
+            border-radius: 16px;
+        }
+        
+        /* Grup başlıkları */
+        preferencesgroup > box > label.title {
+            font-weight: 700;
+        }
+        
+        /* Switch stilleri */
+        switch {
+            border-radius: 999px;
+        }
+        
+        /* Scale/slider */
+        scale trough {
+            border-radius: 8px;
+        }
+        
+        scale highlight {
+            border-radius: 8px;
+        }
+        
+        /* Header bar */
+        headerbar {
+            padding: 6px 8px;
+        }
+        
+        /* Durum çubuğu */
+        .status-bar {
+            background: alpha(@card_bg_color, 0.5);
+            border-top: 1px solid alpha(@borders, 0.3);
+        }
+        """
+        css_provider.load_from_data(css.encode())
+        Gtk.StyleContext.add_provider_for_display(
+            self.win.get_display(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+    
+    def on_menu_selected(self, listbox, row):
+        if row is None:
+            return
+        pages = ["timing", "appearance", "system", "advanced"]
+        index = row.get_index()
+        if index < len(pages):
+            self.stack.set_visible_child_name(pages[index])
+    
+    def mark_changed(self):
+        self.has_changes = True
+        self.apply_btn.set_sensitive(True)
+    
+    def on_reload(self, button):
+        self.grub_config.load()
+        dialog = Adw.MessageDialog.new(self.win)
+        dialog.set_heading("🔄 Yeniden Yüklendi")
+        dialog.set_body("GRUB ayarları diskten yeniden okundu.\nDeğişiklikleri görmek için uygulamayı yeniden başlatın.")
+        dialog.add_response("ok", "Tamam")
+        dialog.present()
+    
+    def on_about(self, button):
+        dialog = Adw.AboutDialog()
+        dialog.set_application_name("GRUB Ayarları")
+        dialog.set_version(APP_VERSION)
+        dialog.set_developer_name("Linux Aracı")
+        dialog.set_comments("Ubuntu için kolay GRUB yapılandırma aracı.\n\nHer ayarın yanındaki yardım butonuna tıklayarak\ndetaylı açıklama alabilirsiniz.")
+        dialog.set_license_type(Gtk.License.GPL_3_0)
+        dialog.present(self.win)
+    
+    def on_apply(self, button):
+        # Show confirmation
+        confirm = Adw.MessageDialog.new(self.win)
+        confirm.set_heading("⚠️ Değişiklikleri Uygula")
+        confirm.set_body("GRUB yapılandırması güncellenecek.\n\nBu işlem root yetkisi gerektirir ve\nmevcut ayarlarınız yedeklenecektir.")
+        confirm.add_response("cancel", "İptal")
+        confirm.add_response("apply", "Uygula")
+        confirm.set_response_appearance("apply", Adw.ResponseAppearance.SUGGESTED)
+        confirm.connect("response", self.on_confirm_response)
+        confirm.present()
+    
+    def require_auth(self, callback):
+        """Yetki iste ve callback çalıştır"""
+        if self.cached_password:
+            callback()
+            return
+
+        def show_dialog():
+            try:
+                logger.info("DEBUG: show_dialog started")
+                # GC'den korumak için instance'ı sakla
+                logger.info("DEBUG: Creating PoliteAuthDialog...")
+                self.auth_dialog_instance = PoliteAuthDialog(self.win)
+                logger.info("DEBUG: PoliteAuthDialog created")
+                
+                def on_resp(d, r):
+                    logger.info(f"DEBUG: Auth dialog response: {r}")
+                    if r == "ok":
+                        self.cached_password = d.get_password()
+                        d.close()
+                        callback()
+                    else:
+                        d.close()
+                    self.auth_dialog_instance = None
+                
+                self.auth_dialog_instance.set_callback(on_resp)
+                logger.info("DEBUG: Presenting dialog...")
+                self.auth_dialog_instance.present()
+                logger.info("DEBUG: Dialog presented")
+                return False
+            except Exception as e:
+                logger.error(f"CRITICAL: Failed to show auth dialog: {e}", exc_info=True)
+                return False
+            
+        GLib.timeout_add(200, show_dialog)
+
+    def on_confirm_response(self, dialog, response):
+        dialog.close()
+        if response != "apply":
+            return
+        
+        self.require_auth(self.perform_update_action)
+
+    def perform_update_action(self):
+        """Gerçek güncelleme işlemi"""
+        # Collect values
+        all_values = {}
+        
+        timing_values = self.timing_page.get_values()
+        appearance_values = self.appearance_page.get_values()
+        system_values = self.system_page.get_values()
+        advanced_values = self.advanced_page.get_values()
+        
+        # DEBUG: Log collected values
+        logger.info(f"DEBUG timing_values: {timing_values}")
+        logger.info(f"DEBUG system_values: {system_values}")
+        logger.info(f"DEBUG appearance_values: {list(appearance_values.keys())}")
+        logger.info(f"DEBUG advanced_values: {advanced_values}")
+        
+        # Handle save default setting
+        if timing_values.get("GRUB_DEFAULT") == "saved":
+            all_values["GRUB_DEFAULT"] = "saved"
+            all_values["GRUB_SAVEDEFAULT"] = "true"
+            # system_values'dan GRUB_DEFAULT hariç diğerlerini ekle (OS_PROBER vb.)
+            for k, v in system_values.items():
+                if k != "GRUB_DEFAULT":
+                    all_values[k] = v
+        else:
+            all_values.update(system_values)
+        
+        all_values.update({k: v for k, v in timing_values.items() if k not in ["GRUB_DEFAULT", "GRUB_SAVEDEFAULT"]})
+        all_values.update(appearance_values)
+        all_values.update(advanced_values)
+        
+        # _ORIGINAL_BACKGROUND içsel değişken, config'e yazılmamalı
+        bg_original = all_values.pop("_ORIGINAL_BACKGROUND", "")
+        
+        for key, value in all_values.items():
+            self.grub_config.set(key, value)
+        
+        new_config = self.grub_config.generate_config()
+        
+        temp_file = "/tmp/grub_settings_new"
+        with open(temp_file, 'w') as f:
+            f.write(new_config)
+        
+        # Arkaplan resmi kopyalama komutu
+        bg_commands = ""
+        if bg_original and os.path.exists(bg_original):
+            ext = os.path.splitext(bg_original)[1].lower()
+            if ext == ".jpeg":
+                ext = ".jpg"
+            bg_dest = f"/boot/grub/background{ext}"
+            bg_src_quoted = shlex.quote(bg_original)
+            bg_dest_quoted = shlex.quote(bg_dest)
+            bg_commands = f"cp {bg_src_quoted} {bg_dest_quoted} && chmod 644 {bg_dest_quoted} && "
+        
+        # Terminal çıktı penceresini göster
+        self.show_terminal_dialog(temp_file, bg_commands)
+    
+    def show_terminal_dialog(self, temp_file, bg_commands):
+        """Terminal çıktısını gösteren dialog"""
+        # Dialog oluştur
+        self.term_dialog = Adw.Window()
+        self.term_dialog.set_title("🔄 GRUB Güncelleniyor...")
+        self.term_dialog.set_default_size(600, 400)
+        self.term_dialog.set_modal(True)
+        self.term_dialog.set_transient_for(self.win)
+        self.term_dialog.set_hide_on_close(True)
+        
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        
+        # Header
+        header = Adw.HeaderBar()
+        header.set_show_end_title_buttons(False)
+        header.set_show_start_title_buttons(False)
+        
+        title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        spinner = Gtk.Spinner()
+        spinner.start()
+        self.term_spinner = spinner
+        title_label = Gtk.Label(label="GRUB Güncelleniyor...")
+        self.term_title = title_label
+        title_box.append(spinner)
+        title_box.append(title_label)
+        header.set_title_widget(title_box)
+        
+        main_box.append(header)
+        
+        # Terminal alanı
+        term_frame = Gtk.Frame()
+        term_frame.set_margin_start(16)
+        term_frame.set_margin_end(16)
+        term_frame.set_margin_top(16)
+        term_frame.set_margin_bottom(16)
+        term_frame.add_css_class("terminal-frame")
+        
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_vexpand(True)
+        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        
+        self.term_textview = Gtk.TextView()
+        self.term_textview.set_editable(False)
+        self.term_textview.set_cursor_visible(False)
+        self.term_textview.set_monospace(True)
+        self.term_textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self.term_textview.set_left_margin(12)
+        self.term_textview.set_right_margin(12)
+        self.term_textview.set_top_margin(12)
+        self.term_textview.set_bottom_margin(12)
+        self.term_textview.add_css_class("terminal-text")
+        
+        self.term_buffer = self.term_textview.get_buffer()
+        self.term_buffer.set_text(f"$ {PATHS.update_cmd}\n\n")
+        
+        scrolled.set_child(self.term_textview)
+        term_frame.set_child(scrolled)
+        main_box.append(term_frame)
+        
+        # Durum çubuğu
+        status_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        status_box.set_margin_start(16)
+        status_box.set_margin_end(16)
+        status_box.set_margin_bottom(16)
+        status_box.set_halign(Gtk.Align.CENTER)
+        
+        self.status_icon = Gtk.Label(label="⏳")
+        self.status_label = Gtk.Label(label="GRUB güncelleniyor, lütfen bekleyin...")
+        self.status_label.add_css_class("dim-label")
+        
+        status_box.append(self.status_icon)
+        status_box.append(self.status_label)
+        main_box.append(status_box)
+        
+        self.term_dialog.set_content(main_box)
+        
+        # CSS ekle
+        css_provider = Gtk.CssProvider()
+        css = """
+        * {
+            font-family: "DejaVu Sans", Sans;
+        }
+        .terminal-frame {
+            background: #1e1e1e;
+            border-radius: 12px;
+        }
+        .terminal-text {
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        """
+        css_provider.load_from_data(css.encode())
+        Gtk.StyleContext.add_provider_for_display(
+            self.term_dialog.get_display(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+        
+        self.term_dialog.present()
+        
+        # Komutu çalıştır (Script içeriği)
+        script_content = f"""
+            echo '📁 Mevcut ayarlar yedekleniyor...'
+            cp {shlex.quote(GRUB_FILE)} {shlex.quote(GRUB_FILE)}.backup
+            echo '✓ Yedekleme tamamlandı'
+            echo ''
+            {f"echo '🖼️ Arkaplan resmi /boot/grub dizinine kopyalanıyor...' && {bg_commands}echo '✓ Arkaplan kopyalandı ve izinler ayarlandı' && echo ''" if bg_commands else ""}
+            echo '📝 Yeni ayarlar yazılıyor...'
+            cp {shlex.quote(temp_file)} {shlex.quote(GRUB_FILE)}
+            echo '✓ Ayarlar güncellendi'
+            echo ''
+            echo '🔄 GRUB güncelleniyor...'
+            echo '─────────────────────────────────'
+            {PATHS.update_cmd} 2>&1
+            echo '─────────────────────────────────'
+            echo ''
+            echo '✅ İşlem tamamlandı!'
+        """
+        
+        # Sudo komutu
+        full_cmd = get_sudo_command() + [script_content]
+        
+        # Async subprocess başlat
+        def run_command():
+            try:
+                process = subprocess.Popen(
+                    full_cmd,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1
+                )
+                
+                # Şifreyi gönder
+                if self.cached_password:
+                    try:
+                        process.stdin.write(self.cached_password + "\n")
+                        process.stdin.flush()
+                    except BrokenPipeError:
+                        pass
+                
+                def read_output():
+                    try:
+                        line = process.stdout.readline()
+                        if line:
+                            GLib.idle_add(self.append_terminal_line, line)
+                            return True
+                        else:
+                            # Process finished
+                            process.wait()
+                            GLib.idle_add(self.on_command_finished, process.returncode)
+                            return False
+                    except Exception as e:
+                        logger.debug(f"Çıktı okuma tamamlandı veya hata: {e}")
+                        return False
+                
+                GLib.timeout_add(50, read_output)
+                
+            except Exception as e:
+                GLib.idle_add(self.append_terminal_line, f"\n❌ Hata: {str(e)}\n")
+                GLib.idle_add(self.on_command_finished, 1)
+        
+        # Biraz gecikme ile başlat
+        GLib.timeout_add(500, lambda: (run_command(), False)[1])
+    
+    def append_terminal_line(self, line):
+        """Terminal çıktısına satır ekle"""
+        end_iter = self.term_buffer.get_end_iter()
+        self.term_buffer.insert(end_iter, line)
+        
+        # Auto-scroll
+        mark = self.term_buffer.create_mark(None, self.term_buffer.get_end_iter(), False)
+        self.term_textview.scroll_to_mark(mark, 0.0, True, 0.0, 1.0)
+    
+    def on_command_finished(self, return_code):
+        """Komut tamamlandığında"""
+        self.term_spinner.stop()
+        
+        if return_code == 0:
+            self.term_title.set_label("✅ Güncelleme Tamamlandı")
+            self.status_icon.set_label("✅")
+            self.status_label.set_label("GRUB başarıyla güncellendi! Pencere 3 saniye içinde kapanacak...")
+            self.has_changes = False
+            self.apply_btn.set_sensitive(False)
+            
+            # 3 saniye sonra kapat
+            GLib.timeout_add(3000, self.close_terminal_dialog)
+        else:
+            self.term_title.set_label("❌ Güncelleme Başarısız")
+            self.status_icon.set_label("❌")
+            self.status_label.set_label("Bir hata oluştu. Pencereyi manuel kapatabilirsiniz.")
+            
+            # Kapat butonu göster
+            close_btn = Gtk.Button(label="Kapat")
+            close_btn.add_css_class("destructive-action")
+            close_btn.connect("clicked", lambda b: self.term_dialog.close())
+            
+            header = self.term_dialog.get_content().get_first_child()
+            header.pack_end(close_btn)
+            header.set_show_end_title_buttons(True)
+    
+    def close_terminal_dialog(self):
+        """Terminal dialogunu kapat"""
+        if self.term_dialog:
+            self.term_dialog.close()
+            self.term_dialog = None
+        return False
+    
+    def show_terminal_dialog_custom(self, script_content, title, callback=None):
+        """Özel komut çalıştıran terminal dialog"""
+        # Dialog oluştur
+        self.term_dialog = Adw.Window()
+        self.term_dialog.set_title(title)
+        self.term_dialog.set_default_size(600, 400)
+        self.term_dialog.set_modal(True)
+        self.term_dialog.set_transient_for(self.win)
+        self.term_dialog.set_hide_on_close(True)
+        
+        self.custom_callback = callback
+        
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        
+        # Header
+        header = Adw.HeaderBar()
+        header.set_show_end_title_buttons(False) # Kapatmayı devre dışı bırak
+        header.set_show_start_title_buttons(False)
+        
+        title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        spinner = Gtk.Spinner()
+        spinner.start()
+        self.term_spinner = spinner
+        title_label = Gtk.Label(label=title)
+        self.term_title = title_label
+        title_box.append(spinner)
+        title_box.append(title_label)
+        header.set_title_widget(title_box)
+        main_box.append(header)
+        
+        # Terminal frame
+        term_frame = Gtk.Frame()
+        term_frame.add_css_class("terminal-frame")
+        term_frame.set_margin_start(16); term_frame.set_margin_end(16)
+        term_frame.set_margin_top(16); term_frame.set_margin_bottom(16)
+        
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_vexpand(True)
+        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        
+        self.term_textview = Gtk.TextView()
+        self.term_textview.set_editable(False)
+        self.term_textview.set_cursor_visible(False)
+        self.term_textview.set_monospace(True)
+        self.term_textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self.term_textview.set_left_margin(12); self.term_textview.set_right_margin(12)
+        self.term_textview.set_top_margin(12); self.term_textview.set_bottom_margin(12)
+        self.term_textview.add_css_class("terminal-text")
+        
+        self.term_buffer = self.term_textview.get_buffer()
+        self.term_buffer.set_text(f"$ {title}\n\n")
+        
+        scrolled.set_child(self.term_textview)
+        term_frame.set_child(scrolled)
+        main_box.append(term_frame)
+        
+        # Status
+        status_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        status_box.set_halign(Gtk.Align.CENTER)
+        status_box.set_margin_start(16)
+        status_box.set_margin_end(16)
+        status_box.set_margin_bottom(16)
+        self.status_icon = Gtk.Label(label="⏳")
+        self.status_label = Gtk.Label(label="İşlem yapılıyor...")
+        self.status_label.add_css_class("dim-label")
+        status_box.append(self.status_icon)
+        status_box.append(self.status_label)
+        main_box.append(status_box)
+        
+        self.term_dialog.set_content(main_box)
+        
+        # CSS (Font fix)
+        css_provider = Gtk.CssProvider()
+        css = """
+        * { font-family: "DejaVu Sans", Sans; }
+        .terminal-frame { background: #1e1e1e; border-radius: 12px; }
+        .terminal-text { background: #1e1e1e; color: #00ff00; font-family: "DejaVu Sans Mono", Monospace; font-size: 12px; }
+        """
+        css_provider.load_from_data(css.encode())
+        Gtk.StyleContext.add_provider_for_display(self.term_dialog.get_display(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        
+        self.term_dialog.present()
+        
+        # Sudo komutu
+        full_cmd = get_sudo_command() + [script_content]
+        
+        def run_command():
+            try:
+                process = subprocess.Popen(
+                    full_cmd,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1
+                )
+                
+                # Şifreyi gönder
+                if self.cached_password:
+                    try:
+                        process.stdin.write(self.cached_password + "\n")
+                        process.stdin.flush()
+                    except BrokenPipeError:
+                        pass
+                
+                def read_output():
+                    try:
+                        line = process.stdout.readline()
+                        if line:
+                            GLib.idle_add(self.append_terminal_line, line)
+                            return True
+                        else:
+                            process.wait()
+                            GLib.idle_add(self.on_custom_command_finished, process.returncode)
+                            return False
+                    except Exception as e:
+                        logger.debug(f"Çıktı okuma tamamlandı veya hata: {e}")
+                        return False
+                
+                GLib.timeout_add(50, read_output)
+            except Exception as e:
+                GLib.idle_add(self.append_terminal_line, f"\n❌ Hata: {str(e)}\n")
+                GLib.idle_add(self.on_custom_command_finished, 1)
+        
+        GLib.timeout_add(500, lambda: (run_command(), False)[1])
+    
+    def on_custom_command_finished(self, return_code):
+        """Özel komut tamamlandığında"""
+        self.term_spinner.stop()
+        
+        success = return_code == 0
+        
+        if success:
+            self.term_title.set_label("✅ İşlem Tamamlandı")
+            self.status_icon.set_label("✅")
+            self.status_label.set_label("Başarıyla tamamlandı! Pencere 3 saniye içinde kapanacak...")
+            
+            # 3 saniye sonra kapat
+            GLib.timeout_add(3000, self.close_terminal_dialog)
+        else:
+            self.term_title.set_label("❌ İşlem Başarısız")
+            self.status_icon.set_label("❌")
+            self.status_label.set_label("Bir hata oluştu. Pencereyi manuel kapatabilirsiniz.")
+            
+            # Kapat butonu göster
+            close_btn = Gtk.Button(label="Kapat")
+            close_btn.add_css_class("destructive-action")
+            close_btn.connect("clicked", lambda b: self.term_dialog.close())
+            
+            header = self.term_dialog.get_content().get_first_child()
+            header.pack_end(close_btn)
+            header.set_show_end_title_buttons(True)
+        
+        # Callback varsa çağır
+        if self.custom_callback:
+            self.custom_callback(success)
+
+
+if __name__ == "__main__":
+    app = GrubSettingsApp()
+    app.run(None)

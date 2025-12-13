@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Grub Settings
+Comment=Customize your GRUB bootloader easily
+Exec=grub-settings
+Icon=io.github.taylan.grubsettings
+Terminal=false
+Type=Application
+Categories=System;Settings;
+Keywords=grub;boot;loader;customization;
+StartupNotify=true

@@ -7,7 +7,7 @@ description: GRUB Settings geliştirme ve release yönetimi workflow'u
 ## 🧑‍💻 Geliştirici Profili
 Sen bir **Python uzmanı** ve **Linux yazılım geliştiricisi**sin. Bu proje:
 - GTK4 + LibAdwaita kullanıyor
-- Tüm Linux dağıtımlarında çalışabilecek **portable** bir uygulama
+- Tüm Linux dağıtımlarında çalışabilecek bir uygulama
 - **Flathub'da** yayınlanmak üzere başvuru yapılmış
 
 ---
@@ -28,7 +28,13 @@ Versiyon numarası şurada güncellenmeli:
 - `grub_settings.py` → `APP_VERSION` değişkeni
 - `flatpak/io.github.taylan.grubsettings.metainfo.xml` → `<release>` tag
 
-### 2. Commit ve Push
+### 2. README Güncellemesi
+**Her yeni özellik veya değişiklikte README.md'yi güncelle!**
+- Features bölümüne yeni özellikler ekle
+- Ekran görüntülerini güncelle
+- Kurulum talimatlarını kontrol et
+
+### 3. Commit ve Push
 ```bash
 git add .
 git commit -m "v0.1.x: [Değişiklik açıklaması]"
@@ -37,52 +43,24 @@ git push
 
 ---
 
-## 📖 README Güncellemesi
+## 🚀 Yeni Release Oluşturma (Otomatik!)
 
-Belirli aralıklarla (özellikle yeni özellikler eklendiğinde) README.md'yi güncelle:
+GitHub Actions artık otomatik derleme yapıyor! Sadece tag push et:
 
-1. **Yeni Özellikler:** Features bölümüne ekle
-2. **Ekran Görüntüleri:** Güncel screenshots ekle
-3. **Kurulum Talimatları:** Değişiklik varsa güncelle
-4. **Changelog:** Son değişiklikleri özetle
-
----
-
-## 🚀 Stabil Sürüm Release (GitHub)
-
-Stabil kabul edilen her sürümü GitHub'a release olarak yükle:
-
-### Adımlar:
 // turbo
 1. Versiyonu güncelle ve commit et
 
 // turbo
-2. Git tag oluştur:
+2. Tag oluştur ve push et:
 ```bash
-git tag -a v0.1.0 -m "v0.1.0 - [Açıklama]"
-git push origin v0.1.0
+git tag -a v0.x.x -m "v0.x.x - [Açıklama]"
+git push origin v0.x.x
 ```
 
-3. GitHub'da release oluştur:
-```bash
-gh release create v0.1.0 \
-  --title "v0.1.0 - [Başlık]" \
-  --notes "## Değişiklikler
-- [Değişiklik 1]
-- [Değişiklik 2]
-
-## Kurulum
-\`\`\`bash
-chmod +x grub-settings
-./grub-settings
-\`\`\`"
-```
-
-4. PyInstaller ile build al ve release'e ekle:
-```bash
-pyinstaller --onefile --clean --name "grub-settings" --add-data "assets:assets" --add-data "locales:locales" grub_settings.py
-gh release upload v0.1.0 dist/grub-settings
-```
+3. **Otomatik olarak:**
+   - `.deb` paketi oluşturulur
+   - Kaynak kod arşivi oluşturulur
+   - Her ikisi de Release'e yüklenir
 
 ---
 
@@ -96,7 +74,7 @@ gh release upload v0.1.0 dist/grub-settings
 ```bash
 cd flathub_pr
 git add io.github.taylan.grubsettings.yml
-git commit -m "Update to v0.1.0"
+git commit -m "Update to v0.x.x"
 git push
 ```
 
@@ -127,9 +105,7 @@ Belirli aralıklarla (özellikle major sürümlerden önce):
 - [ ] Versiyon numarası güncellendi
 - [ ] metainfo.xml'de release eklendi
 - [ ] README.md güncellendi (yeni özellikler varsa)
-- [ ] Changelog yazıldı
 - [ ] Kod temizliği yapıldı
 - [ ] Test edildi
-- [ ] Git tag oluşturuldu
-- [ ] GitHub release yayınlandı
+- [ ] Git tag push edildi (otomatik build tetiklenir)
 - [ ] Flathub manifest güncellendi

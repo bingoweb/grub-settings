@@ -198,10 +198,6 @@ msgstr "Zamanlama Ayarları"
 #: grub_settings.py:614
 msgid "Adjust how long the GRUB menu appears when the computer starts."
 msgstr "Bilgisayar açıldığında GRUB menüsünün ne kadar süre görüneceğini ayarlayın."
-"Bilgisayar açıldığında GRUB menüsünün ne kadar süre görüneceğini ayarlayın."
-"Bilgisayar açıldığında GRUB menüsünün ne kadar süre görüneceğini ayarlayın."
-"Bilgisayar açıldığında GRUB menüsünün ne kadar süre görüneceğini ayarlayın."
-"Bilgisayar açıldığında GRUB menüsünün ne kadar süre görüneceğini ayarlayın."
 
 #: grub_settings.py:622
 msgid "⏰ Timeout Duration"
@@ -266,10 +262,6 @@ msgstr "Kernel parametreleri ve açılış davranışını özelleştirin."
 #: grub_settings.py:773 grub_settings.py:1697
 msgid "Settings in this section may affect system boot. Be careful!"
 msgstr "Bu bölümdeki ayarlar sistem açılışını etkileyebilir. Dikkatli olun!"
-"Bu bölümdeki ayarlar sistem açılışını etkileyebilir. Dikkatli olun!Bu "
-"bölümdeki ayarlar sistem açılışını etkileyebilir. Dikkatli olun!Bu bölümdeki "
-"ayarlar sisteminizin açılışını etkileyebilir. Dikkatli olun!Bu bölümdeki "
-"ayarlar sisteminizin açılışını etkileyebilir. Dikkatli olun!"
 
 #: grub_settings.py:783
 msgid "🖥️ Boot Display"
@@ -634,7 +626,3 @@ msgstr "Kernel parametreleri ve kurtarma"
 #: grub_settings.py:1939
 msgid "Click the ❓ button next to each setting for detailed explanation."
 msgstr "Her ayarın yanındaki ❓ butonuna tıklayarak detaylı açıklama alabilirsiniz."
-"Her ayarın yanındaki ❓ butonuna tıklayarak detaylı açıklama alabilirsiniz."
-"Her ayarın yanındaki ❓ butonuna tıklayarak detaylı açıklama alabilirsiniz."
-"Her ayarın yanındaki ❓ butonuna tıklayarak detaylı açıklama alabilirsiniz."
-"Her ayarın yanındaki ❓ butonuna tıklayarak detaylı açıklama alabilirsiniz."

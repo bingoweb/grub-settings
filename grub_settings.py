@@ -345,124 +345,120 @@ def get_grub_menu_entries():
     return entries
 
 # Detaylı açıklamalar
+# Detaylı açıklamalar
 HELP_TEXTS = {
-    "timeout": """<b>Menü Bekleme Süresi Nedir?</b>
+    "timeout": _("""<b>What is Menu Timeout?</b>
 
-Bilgisayarınız açıldığında GRUB menüsü görünür ve bu süre boyunca bekler.
-Bu süre içinde hangi işletim sistemini başlatacağınızı seçebilirsiniz.
+When your computer starts, the GRUB menu appears and waits for this duration.
+During this time, you can choose which operating system to start.
 
-<b>Öneriler:</b>
-• <b>0 saniye:</b> Menü gösterilmez, direkt varsayılan sistem açılır
-• <b>3-5 saniye:</b> Hızlı açılış, gerektiğinde seçim yapabilirsiniz
-• <b>10+ saniye:</b> Rahat seçim için yeterli süre
+<b>Recommendations:</b>
+• <b>0 seconds:</b> Menu hidden, boots default system immediately
+• <b>3-5 seconds:</b> Quick boot, gives time to choose if needed
+• <b>10+ seconds:</b> Plenty of time to choose comfortably
 
-<i>💡 İpucu: Tek işletim sistemi kullanıyorsanız 0-3 saniye yeterlidir.</i>""",
+<i>💡 Tip: 0-3 seconds is enough if you only use one operating system.</i>"""),
 
-    "timeout_style": """<b>Menü Görünürlük Stili</b>
+    "timeout_style": _("""<b>Menu Visibility Style</b>
 
-<b>Her Zaman Göster:</b>
-Bilgisayar her açıldığında GRUB menüsü görünür.
-Çoklu işletim sistemi kullananlar için önerilir.
+<b>Show Menu:</b>
+The GRUB menu appears every time the computer starts.
+Recommended for multi-boot users.
 
-<b>Gizli (Shift ile göster):</b>
-Menü normalde gizlidir. Shift tuşuna basılı tutarak gösterebilirsiniz.
-Tek sistem kullanıp hızlı açılış isteyenler için ideal.
+<b>Hidden (Show with Shift):</b>
+The menu is normally hidden. You can show it by holding down the Shift key.
+Ideal for single-boot users who want a fast boot.
 
-<b>Geri Sayım:</b>
-Sadece geri sayım gösterilir, tam menü görünmez.
-Minimalist görünüm isteyenler için.""",
+<b>Countdown:</b>
+Only a countdown is shown, the full menu is not visible.
+For those who want a minimalist look."""),
 
-    "background": """<b>GRUB Arkaplan Resmi</b>
+    "background": _("""<b>GRUB Background Image</b>
 
-GRUB menüsünün arka planına özel bir resim ekleyebilirsiniz.
+You can add a custom image to the background of the GRUB menu.
 
-<b>Desteklenen formatlar:</b> PNG, JPEG, TGA
+<b>Supported formats:</b> PNG, JPEG, TGA
 
-<b>Önerilen boyut:</b> Ekran çözünürlüğünüzle aynı
-(örn: 1920x1080)
+<b>Recommended size:</b> Same as your screen resolution
+(e.g., 1920x1080)
 
-<i>💡 İpucu: Koyu renkli resimler menü yazılarının okunabilirliğini artırır.</i>""",
+<i>💡 Tip: Darker images improve the readability of menu text.</i>"""),
 
-    "resolution": """<b>GRUB Ekran Çözünürlüğü</b>
+    "resolution": _("""<b>GRUB Screen Resolution</b>
 
-GRUB menüsünün hangi çözünürlükte görüneceğini belirler.
+Determines the resolution at which the GRUB menu appears.
 
-<b>auto:</b> Ekran kartınızın desteklediği en iyi çözünürlük
-<b>1920x1080:</b> Full HD - Modern ekranlar için
-<b>1280x720:</b> HD - Eski sistemler için daha uyumlu
+<b>auto:</b> The best resolution supported by your graphics card
+<b>1920x1080:</b> Full HD - For modern screens
+<b>1280x720:</b> HD - More compatible for older systems
 
-<i>💡 İpucu: Arkaplan resmi kullanıyorsanız, resminizin boyutuyla aynı çözünürlüğü seçin.</i>""",
+<i>💡 Tip: If using a background image, select the same resolution as your image.</i>"""),
 
-    "default_os": """<b>Varsayılan İşletim Sistemi</b>
+    "default_os": _("""<b>Default Operating System</b>
 
-Bekleme süresi dolduğunda hangi sistemin otomatik başlayacağını belirler.
+Determines which system starts automatically when the timeout expires.
 
-<b>Sıra numarası:</b>
-• 0 = Listedeki ilk sistem (genellikle Ubuntu)
-• 1 = İkinci sistem (genellikle Windows veya eski kernel)
-• 2 = Üçüncü sistem... vb.
+<b>Order Number:</b>
+• 0 = First system in the list (usually Ubuntu)
+• 1 = Second system (usually Windows or older kernel)
+• 2 = Third system... etc.
 
-<i>💡 İpucu: GRUB menüsünde sıralamanızı kontrol edip numarayı belirleyin.</i>""",
+<i>💡 Tip: Check your order in the GRUB menu to determine the number.</i>"""),
 
-    "os_prober": """<b>İşletim Sistemi Algılama (OS-Prober)</b>
+    "os_prober": _("""<b>Operating System Detection (OS-Prober)</b>
 
-Bu özellik açıkken, sisteminizdeki diğer işletim sistemleri
-(Windows, başka Linux dağıtımları vb.) otomatik olarak
-GRUB menüsüne eklenir.
+When enabled, other operating systems on your computer
+(Windows, other Linux distros, etc.) are automatically
+added to the GRUB menu.
 
-<b>Açık:</b> Diğer OS'lar menüde görünür
-<b>Kapalı:</b> Sadece bu Linux sistemi görünür
+<b>On:</b> Other OSs appear in the menu
+<b>Off:</b> Only this Linux system appears
 
-<i>💡 İpucu: Dual-boot (Windows + Linux) kullanıyorsanız mutlaka açık olmalı!</i>""",
+<i>💡 Tip: Must be enabled if using Dual-boot (Windows + Linux)!</i>"""),
 
-    "quiet": """<b>Sessiz Mod (quiet)</b>
+    "quiet": _("""<b>Quiet Mode (quiet)</b>
 
-Açılış sırasında kernel mesajlarının gösterilip gösterilmeyeceğini belirler.
+Determines whether kernel messages are shown during boot.
 
-<b>Açık:</b> Teknik mesajlar gizlenir, temiz bir açılış ekranı
-<b>Kapalı:</b> Tüm sistem mesajları gösterilir (hata ayıklama için)
+<b>On:</b> Technical messages hidden, clean boot screen
+<b>Off:</b> All system messages shown (for debugging)
 
-<i>💡 İpucu: Normal kullanımda açık bırakın. Açılış sorunlarını teşhis etmek için kapatın.</i>""",
+<i>💡 Tip: Leave on for normal use. Turn off to diagnose boot issues.</i>"""),
 
-    "splash": """<b>Açılış Animasyonu (splash)</b>
+    "splash": _("""<b>Boot Animation (splash)</b>
 
-Plymouth açılış animasyonunu gösterip göstermeyeceğini belirler.
-Bu, Ubuntu logosunun döndüğü veya ilerleme çubuğunun gösterildiği ekrandır.
+Determines whether to show the Plymouth boot animation.
+This is the screen where the Ubuntu logo spins or a progress bar is shown.
 
-<b>Açık:</b> Güzel animasyonlu açılış ekranı
-<b>Kapalı:</b> Siyah ekranda metin tabanlı açılış
+<b>On:</b> Beautiful animated boot screen
+<b>Off:</b> Text-based boot on black screen
 
-<i>💡 İpucu: Görsel açılış için açık bırakın.</i>""",
+<i>💡 Tip: Leave on for a visual boot experience.</i>"""),
 
-    "recovery": """<b>Kurtarma Modu Menüsü</b>
+    "recovery": _("""<b>Recovery Mode Menu</b>
 
-GRUB menüsünde "Advanced options" altında kurtarma
-(recovery) seçeneklerinin gösterilip gösterilmeyeceği.
+Whether to show recovery options under "Advanced options"
+in the GRUB menu.
 
-<b>Açık:</b> Sorun çözme seçenekleri menüde görünür
-<b>Kapalı:</b> Menü daha temiz görünür
+<b>On:</b> Troubleshooting options appear in the menu
+<b>Off:</b> Menu looks cleaner
 
-<i>💡 İpucu: Acil durumlar için açık bırakmanız önerilir!</i>""",
+<i>💡 Tip: Recommended to keep on for emergencies!</i>"""),
 
-    "savedefault": """<b>Son Seçimi Hatırla</b>
+    "savedefault": _("""<b>Remember Last Selection</b>
 
-Bu özellik açıkken, en son başlattığınız işletim sistemi
-bir sonraki açılışta varsayılan olarak seçili gelir.
+When enabled, the last operating system you booted
+will be selected by default on the next boot."""),
 
-<b>Örnek:</b> Windows'u başlattınız → Bilgisayarı yeniden başlattınız
-→ GRUB otomatik olarak Windows'u seçer
+    "submenu": _("""<b>Disable Submenus</b>
 
-<i>💡 İpucu: Farklı sistemler arasında sık geçiş yapıyorsanız çok kullanışlı!</i>""",
+Old kernels and recovery modes are usually grouped under
+"Advanced options" submenu.
 
-    "submenu": """<b>Alt Menüleri Devre Dışı Bırak</b>
+<b>Submenu On:</b> Compact menu, access via submenu
+<b>Submenu Off:</b> All options listed in main menu
 
-Eski kernel'lar ve kurtarma modları normalde "Advanced options"
-alt menüsü altında gruplanır.
-
-<b>Alt menü açık:</b> Kompakt menü, alt menüden erişim
-<b>Alt menü kapalı:</b> Tüm seçenekler ana menüde listelenir
-
-<i>💡 İpucu: Eski kernel'lara sık erişiyorsanız kapatabilirsiniz.</i>"""
+<i>💡 Tip: You can disable this if you frequently access old kernels.</i>""")
 }
 
 

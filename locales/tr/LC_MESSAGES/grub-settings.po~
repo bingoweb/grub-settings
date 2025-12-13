@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: test 3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-13 20:27+0300\n"
+"POT-Creation-Date: 2025-12-13 21:18+0300\n"
 "PO-Revision-Date: 2025-12-13 20:14+0300\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,202 +17,621 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: grub_settings.py:137
+#: grub_settings.py:145
 msgid "Permission Required 🌸"
 msgstr "İzin Gerekli 🌸"
 
-#: grub_settings.py:164
+#: grub_settings.py:172
 msgid "Permission Required"
 msgstr "İzin Gerekli"
 
-#: grub_settings.py:169
+#: grub_settings.py:177
 msgid ""
 "I need administrator permission to perform this action.\n"
 "Could you please enter your password? 🥺"
 msgstr ""
 
-#: grub_settings.py:177
+#: grub_settings.py:185
 msgid "Sudo password"
 msgstr "Sudo şifresi"
 
-#: grub_settings.py:188
+#: grub_settings.py:196
 msgid "Cancel"
 msgstr "Vazgeç"
 
-#: grub_settings.py:191
+#: grub_settings.py:199
 msgid "OK"
 msgstr "Tamam"
 
-#: grub_settings.py:602
+#: grub_settings.py:350
+msgid ""
+"<b>What is Menu Timeout?</b>\n"
+"\n"
+"When your computer starts, the GRUB menu appears and waits for this "
+"duration.\n"
+"During this time, you can choose which operating system to start.\n"
+"\n"
+"<b>Recommendations:</b>\n"
+"• <b>0 seconds:</b> Menu hidden, boots default system immediately\n"
+"• <b>3-5 seconds:</b> Quick boot, gives time to choose if needed\n"
+"• <b>10+ seconds:</b> Plenty of time to choose comfortably\n"
+"\n"
+"<i>💡 Tip: 0-3 seconds is enough if you only use one operating system.</i>"
+msgstr ""
+
+#: grub_settings.py:362
+msgid ""
+"<b>Menu Visibility Style</b>\n"
+"\n"
+"<b>Show Menu:</b>\n"
+"The GRUB menu appears every time the computer starts.\n"
+"Recommended for multi-boot users.\n"
+"\n"
+"<b>Hidden (Show with Shift):</b>\n"
+"The menu is normally hidden. You can show it by holding down the Shift key.\n"
+"Ideal for single-boot users who want a fast boot.\n"
+"\n"
+"<b>Countdown:</b>\n"
+"Only a countdown is shown, the full menu is not visible.\n"
+"For those who want a minimalist look."
+msgstr ""
+
+#: grub_settings.py:376
+msgid ""
+"<b>GRUB Background Image</b>\n"
+"\n"
+"You can add a custom image to the background of the GRUB menu.\n"
+"\n"
+"<b>Supported formats:</b> PNG, JPEG, TGA\n"
+"\n"
+"<b>Recommended size:</b> Same as your screen resolution\n"
+"(e.g., 1920x1080)\n"
+"\n"
+"<i>💡 Tip: Darker images improve the readability of menu text.</i>"
+msgstr ""
+
+#: grub_settings.py:387
+msgid ""
+"<b>GRUB Screen Resolution</b>\n"
+"\n"
+"Determines the resolution at which the GRUB menu appears.\n"
+"\n"
+"<b>auto:</b> The best resolution supported by your graphics card\n"
+"<b>1920x1080:</b> Full HD - For modern screens\n"
+"<b>1280x720:</b> HD - More compatible for older systems\n"
+"\n"
+"<i>💡 Tip: If using a background image, select the same resolution as your "
+"image.</i>"
+msgstr ""
+
+#: grub_settings.py:397
+msgid ""
+"<b>Default Operating System</b>\n"
+"\n"
+"Determines which system starts automatically when the timeout expires.\n"
+"\n"
+"<b>Order Number:</b>\n"
+"• 0 = First system in the list (usually Ubuntu)\n"
+"• 1 = Second system (usually Windows or older kernel)\n"
+"• 2 = Third system... etc.\n"
+"\n"
+"<i>💡 Tip: Check your order in the GRUB menu to determine the number.</i>"
+msgstr ""
+
+#: grub_settings.py:408
+msgid ""
+"<b>Operating System Detection (OS-Prober)</b>\n"
+"\n"
+"When enabled, other operating systems on your computer\n"
+"(Windows, other Linux distros, etc.) are automatically\n"
+"added to the GRUB menu.\n"
+"\n"
+"<b>On:</b> Other OSs appear in the menu\n"
+"<b>Off:</b> Only this Linux system appears\n"
+"\n"
+"<i>💡 Tip: Must be enabled if using Dual-boot (Windows + Linux)!</i>"
+msgstr ""
+
+#: grub_settings.py:419
+msgid ""
+"<b>Quiet Mode (quiet)</b>\n"
+"\n"
+"Determines whether kernel messages are shown during boot.\n"
+"\n"
+"<b>On:</b> Technical messages hidden, clean boot screen\n"
+"<b>Off:</b> All system messages shown (for debugging)\n"
+"\n"
+"<i>💡 Tip: Leave on for normal use. Turn off to diagnose boot issues.</i>"
+msgstr ""
+
+#: grub_settings.py:428
+msgid ""
+"<b>Boot Animation (splash)</b>\n"
+"\n"
+"Determines whether to show the Plymouth boot animation.\n"
+"This is the screen where the Ubuntu logo spins or a progress bar is shown.\n"
+"\n"
+"<b>On:</b> Beautiful animated boot screen\n"
+"<b>Off:</b> Text-based boot on black screen\n"
+"\n"
+"<i>💡 Tip: Leave on for a visual boot experience.</i>"
+msgstr ""
+
+#: grub_settings.py:438
+msgid ""
+"<b>Recovery Mode Menu</b>\n"
+"\n"
+"Whether to show recovery options under \"Advanced options\"\n"
+"in the GRUB menu.\n"
+"\n"
+"<b>On:</b> Troubleshooting options appear in the menu\n"
+"<b>Off:</b> Menu looks cleaner\n"
+"\n"
+"<i>💡 Tip: Recommended to keep on for emergencies!</i>"
+msgstr ""
+
+#: grub_settings.py:448
+msgid ""
+"<b>Remember Last Selection</b>\n"
+"\n"
+"When enabled, the last operating system you booted\n"
+"will be selected by default on the next boot."
+msgstr ""
+
+#: grub_settings.py:452
+msgid ""
+"<b>Disable Submenus</b>\n"
+"\n"
+"Old kernels and recovery modes are usually grouped under\n"
+"\"Advanced options\" submenu.\n"
+"\n"
+"<b>Submenu On:</b> Compact menu, access via submenu\n"
+"<b>Submenu Off:</b> All options listed in main menu\n"
+"\n"
+"<i>💡 Tip: You can disable this if you frequently access old kernels.</i>"
+msgstr ""
+
+#: grub_settings.py:605
 msgid "Timing Settings"
 msgstr "Zamanlama Ayarları"
 
-#: grub_settings.py:610
+#: grub_settings.py:613
 msgid "Adjust how long the GRUB menu appears when the computer starts."
 msgstr "Bilgisayar açıldığında GRUB menüsünün ne kadar süre görüneceğini ayarlayın."
 "Bilgisayar açıldığında GRUB menüsünün ne kadar süre görüneceğini ayarlayın."
+"Bilgisayar açıldığında GRUB menüsünün ne kadar süre görüneceğini ayarlayın."
+"Bilgisayar açıldığında GRUB menüsünün ne kadar süre görüneceğini ayarlayın."
 
-#: grub_settings.py:668
+#: grub_settings.py:621
+msgid "⏰ Timeout Duration"
+msgstr "⏰ Bekleme Süresi"
+
+#: grub_settings.py:622
+msgid "Time to display GRUB menu (in seconds)"
+msgstr "GRUB menüsünün ekranda kalma süresi (sn)"
+
+#: grub_settings.py:626
+msgid "Duration"
+msgstr "Süre"
+
+#: grub_settings.py:627
+msgid "0 = Menu hidden, boots immediately"
+msgstr "0 = Menü gizli, hemen açılır"
+
+#: grub_settings.py:663
+msgid "👁️ Menu Visibility"
+msgstr "👁️ Menü Görünürlüğü"
+
+#: grub_settings.py:664
+msgid "Choose how the GRUB menu is displayed"
+msgstr "GRUB menüsünün nasıl gösterileceğini seçin"
+
+#: grub_settings.py:670
 msgid "Show Menu"
 msgstr "Menüyü Göster"
 
-#: grub_settings.py:669
+#: grub_settings.py:671
 msgid "GRUB menu is fully visible on every boot"
 msgstr "GRUB menüsü her açılışta tam olarak görünür"
 
-#: grub_settings.py:678
+#: grub_settings.py:680
 msgid "Hidden"
 msgstr "Gizli"
 
-#: grub_settings.py:679
+#: grub_settings.py:681
 msgid "Show by holding down the Shift key"
 msgstr "Shift tuşuna basılı tutarak gösterin"
 
-#: grub_settings.py:688
+#: grub_settings.py:690
 msgid "Countdown"
 msgstr "Geri Sayım"
 
-#: grub_settings.py:689
+#: grub_settings.py:691
 msgid "Only the remaining time is shown"
 msgstr "Sadece kalan süre gösterilir"
 
-#: grub_settings.py:774
+#: grub_settings.py:708
+msgid "Off"
+msgstr "Kapalı"
+
+#: grub_settings.py:753 grub_settings.py:1677
+msgid "Advanced Settings"
+msgstr "Gelişmiş Ayarlar"
+
+#: grub_settings.py:760 grub_settings.py:1684
+msgid "Customize kernel parameters and boot behavior."
+msgstr "Kernel parametreleri ve açılış davranışını özelleştirin."
+
+#: grub_settings.py:772 grub_settings.py:1696
+msgid "Settings in this section may affect system boot. Be careful!"
+msgstr "Bu bölümdeki ayarlar sistem açılışını etkileyebilir. Dikkatli olun!"
+"Bu bölümdeki ayarlar sistem açılışını etkileyebilir. Dikkatli olun!Bu "
+"bölümdeki ayarlar sisteminizin açılışını etkileyebilir. Dikkatli olun!Bu "
+"bölümdeki ayarlar sisteminizin açılışını etkileyebilir. Dikkatli olun!"
+
+#: grub_settings.py:782
+msgid "🖥️ Boot Display"
+msgstr "🖥️ Açılış Görünümü"
+
+#: grub_settings.py:783
+msgid "What to show on screen during boot"
+msgstr "Açılış sırasında ekranda ne gösterilsin"
+
+#: grub_settings.py:786 grub_settings.py:1710
+msgid "Quiet Boot (quiet)"
+msgstr "Sessiz Açılış (quiet)"
+
+#: grub_settings.py:787
+msgid "Hide technical messages, clean boot"
+msgstr "Teknik mesajları gizle, temiz açılış"
+
+#: grub_settings.py:793
+msgid "Boot Animation (splash)"
+msgstr "Açılış Animasyonu (splash)"
+
+#: grub_settings.py:794
+msgid "Beautiful boot screen with logo"
+msgstr "Logolu güzel açılış ekranı"
+
+#: grub_settings.py:805
+msgid "🛠️ Recovery Options"
+msgstr "🛠️ Kurtarma Seçenekleri"
+
+#: grub_settings.py:806
+msgid "Troubleshooting and recovery mode"
+msgstr "Sorun giderme ve kurtarma modu"
+
+#: grub_settings.py:809 grub_settings.py:1733
+msgid "Show Recovery Mode"
+msgstr "Kurtarma Modunu Göster"
+
+#: grub_settings.py:810
+msgid "Show recovery options in GRUB"
+msgstr "GRUB'da kurtarma seçeneklerini göster"
+
+#: grub_settings.py:820
+msgid "💡 Tip"
+msgstr "💡 İpucu"
+
+#: grub_settings.py:821
+msgid "Recovery mode can be a lifesaver if system fails to boot!"
+msgstr "Sistem açılmazsa kurtarma modu hayat kurtarıcı olabilir!"
+
+#: grub_settings.py:828
+#, fuzzy
+msgid "⌨️ Custom Kernel Parameters"
+msgstr "⌨️ Özel Kernel Parametreleri"
+
+#: grub_settings.py:829
+msgid "For advanced users"
+msgstr "İleri düzey kullanıcılar için"
+
+#: grub_settings.py:832 grub_settings.py:1756
+msgid "Kernel Parameters"
+msgstr "Kernel Parametreleri"
+
+#: grub_settings.py:842
+#, fuzzy
+msgid "Example parameters"
+msgstr "Örnek parametreler"
+
+#: grub_settings.py:846
+msgid "💾 Remember Last Selection"
+msgstr "💾 Son Seçimi Hatırla"
+
+#: grub_settings.py:847
+msgid "Default to the last booted system"
+msgstr "En son kullanılan sistemi varsayılan yap"
+
+#: grub_settings.py:850
+msgid "Remember Last Selection"
+msgstr "Son Seçimi Hatırla"
+
+#: grub_settings.py:851
+msgid "The last used OS will be selected on next boot"
+msgstr "Bir sonraki açılışta en son kullanılan OS seçili gelir"
+
+#: grub_settings.py:917
 msgid "Appearance Settings"
 msgstr "Görünüm Ayarları"
 
-#: grub_settings.py:781
+#: grub_settings.py:924
 msgid "Customize the visual appearance of the GRUB menu."
 msgstr "GRUB menüsünün görsel özelliklerini özelleştirin."
 
-#: grub_settings.py:816
+#: grub_settings.py:932
+msgid "🖼️ Background Image"
+msgstr "🖼️ Arkaplan Resmi"
+
+#: grub_settings.py:933
+msgid "Select a custom background image for the GRUB menu"
+msgstr "GRUB menüsü için özel bir arka plan resmi seçin"
+
+#: grub_settings.py:937
+msgid "Supported Formats"
+msgstr "Desteklenen Formatlar"
+
+#: grub_settings.py:938
+msgid "PNG, JPEG, TGA - Should match your screen resolution"
+msgstr "PNG, JPEG, TGA - Ekran çözünürlüğüyle eşleşmeli"
+
+#: grub_settings.py:959
 msgid ""
 "🖼️ No background image selected\n"
 "Click the button below to select an image"
 msgstr ""
 
-#: grub_settings.py:836
+#: grub_settings.py:979
 msgid "Select Image"
 msgstr "Resim Seç"
 
-#: grub_settings.py:845
+#: grub_settings.py:988
 msgid "Remove"
 msgstr "Kaldır"
 
-#: grub_settings.py:864
+#: grub_settings.py:1003
+#, fuzzy
+msgid "📺 Screen Resolution"
+msgstr "Ekran Çözünürlüğü"
+
+#: grub_settings.py:1004
+msgid "Resolution to display the GRUB menu"
+msgstr "GRUB menüsünün görüntüleneceği çözünürlük"
+
+#: grub_settings.py:1007
 msgid "Screen Resolution"
 msgstr "Ekran Çözünürlüğü"
 
-#: grub_settings.py:1005
-msgid "System Settings"
-msgstr "Sistem Ayarları"
+#: grub_settings.py:1008
+msgid "Select a value supported by your graphics card"
+msgstr "Ekran kartınızın desteklediği bir değer seçin"
 
-#: grub_settings.py:1012
-msgid "Configure operating system selection and dual-boot settings."
-msgstr "İşletim sistemi seçimi ve dual-boot ayarlarını yapılandırın."
-
-#: grub_settings.py:1056
+#: grub_settings.py:1015
 #, fuzzy
 msgid "Language Settings"
 msgstr "Dil Ayarları"
 
-#: grub_settings.py:1057
+#: grub_settings.py:1016
 msgid "Select application language"
 msgstr "Uygulama dilini seçin"
 
-#: grub_settings.py:1061
+#: grub_settings.py:1020
 msgid "Application Language"
 msgstr "Uygulama Dili"
 
-#: grub_settings.py:1062
+#: grub_settings.py:1021
 msgid "Changes require restart"
 msgstr "Değişiklikler yeniden başlatma gerektirir"
 
-#: grub_settings.py:1133
+#: grub_settings.py:1064
+msgid "🎨 Menu Colors"
+msgstr "🎨 Menü Renkleri"
+
+#: grub_settings.py:1065
+msgid "Customize GRUB menu colors (coming soon)"
+msgstr "GRUB menü renklerini özelleştirin (yakında)"
+
+#: grub_settings.py:1068
+msgid "Theme Customization"
+msgstr "Tema Özelleştirme"
+
+#: grub_settings.py:1069
+msgid "This feature will be added in a future version"
+msgstr "Bu özellik gelecek sürümde eklenecek"
+
+#: grub_settings.py:1094 grub_settings.py:1390
+#, fuzzy
+msgid "Restart Required 🔄"
+msgstr "Yeniden Başlatma Gerekli 🔄"
+
+#: grub_settings.py:1104 grub_settings.py:1402
+#, fuzzy
+msgid "Language Changed"
+msgstr "Dil Değiştirildi"
+
+#: grub_settings.py:1108 grub_settings.py:1406
+msgid ""
+"To apply the new language, I need to make a tiny restart.\n"
+"Is that okay correctly? 🥺"
+msgstr ""
+
+#: grub_settings.py:1117 grub_settings.py:1415
+msgid "Later"
+msgstr "Daha Sonra"
+
+#: grub_settings.py:1120 grub_settings.py:1418
+msgid "Restart Now"
+msgstr "Şimdi Başlat"
+
+#: grub_settings.py:1152
+#, fuzzy
+msgid "Select Background Image"
+msgstr "Arkaplan Resmi Seç"
+
+#: grub_settings.py:1155
+msgid "Image Files (PNG, JPEG, TGA)"
+msgstr "Resim Dosyaları (PNG, JPEG, TGA)"
+
+#: grub_settings.py:1237
+msgid "System Settings"
+msgstr "Sistem Ayarları"
+
+#: grub_settings.py:1244
+msgid "Configure operating system selection and dual-boot settings."
+msgstr "İşletim sistemi seçimi ve dual-boot ayarlarını yapılandırın."
+
+#: grub_settings.py:1252
+msgid "🪟 Windows Management"
+msgstr "🪟 Windows Yönetimi"
+
+#: grub_settings.py:1253
+msgid "Add Windows Boot Manager to the GRUB menu"
+msgstr "Windows Boot Manager'ı GRUB menüsüne ekle"
+
+#: grub_settings.py:1257
+msgid "Windows Status"
+msgstr "Windows Durumu"
+
+#: grub_settings.py:1258
+msgid "Detecting..."
+msgstr "Algılanıyor..."
+
+#: grub_settings.py:1272
+msgid "💡 Info"
+msgstr "💡 Bilgi"
+
+#: grub_settings.py:1273
+msgid "If OS-Prober cannot detect Windows, you can add it manually."
+msgstr "Eğer OS-Prober Windows'u algılayamazsa manuel olarak ekleyebilirsiniz."
+
+#: grub_settings.py:1284
+msgid "🎯 Default Operating System"
+msgstr "🎯 Varsayılan İşletim Sistemi"
+
+#: grub_settings.py:1285
+msgid "Which system should start when the timeout expires?"
+msgstr "Süre dolduğunda hangi sistem başlatılsın?"
+
+#: grub_settings.py:1288
+msgid "0 - First Option"
+msgstr "0 - İlk Seçenek"
+
+#: grub_settings.py:1288
+msgid "1 - Second Option"
+msgstr "1 - İkinci Seçenek"
+
+#: grub_settings.py:1288
+msgid "2 - Third Option"
+msgstr "2 - Üçüncü Seçenek"
+
+#: grub_settings.py:1291
+#, fuzzy
+msgid "Default System"
+msgstr "Varsayılan Sistem"
+
+#: grub_settings.py:1292
+msgid "Click refresh to load the menu"
+msgstr "Menüyü yüklemek için yenile butonuna tıklayın"
+
+#: grub_settings.py:1299
+msgid "Load GRUB menu (requires root privileges)"
+msgstr "GRUB menüsünü yükle (root yetkisi gerekir)"
+
+#: grub_settings.py:1325
+msgid "🔍 OS Detection"
+msgstr "🔍 İşletim Sistemi Algılama"
+
+#: grub_settings.py:1326
+msgid "Add other operating systems to the GRUB menu"
+msgstr "Diğer işletim sistemlerini GRUB menüsüne ekle"
+
+#: grub_settings.py:1329
 msgid "Show Other Operating Systems (OS Prober)"
 msgstr "Diğer İşletim Sistemlerini Göster (OS Prober)"
 
-#: grub_settings.py:1134
+#: grub_settings.py:1330
 msgid "Automatically detects Windows and other Linux distros."
 msgstr "Windows ve diğer Linux dağıtımlarını otomatik bulur."
 
-#: grub_settings.py:1419
-msgid "Advanced Settings"
-msgstr "Gelişmiş Ayarlar"
+#: grub_settings.py:1341
+msgid "⚠️ Dual-boot Users"
+msgstr "⚠️ Dual-boot Tarafı"
 
-#: grub_settings.py:1426
-msgid "Customize kernel parameters and boot behavior."
-msgstr "Kernel parametreleri ve açılış davranışını özelleştirin."
+#: grub_settings.py:1342
+msgid "This must be enabled if you have Windows or another OS!"
+msgstr "Windows veya başka bir OS varsa bu açık olmalıdır!"
 
-#: grub_settings.py:1438
-msgid "Settings in this section may affect system boot. Be careful!"
-msgstr "Bu bölümdeki ayarlar sisteminizin açılışını etkileyebilir. Dikkatli olun!"
-"Bu bölümdeki ayarlar sisteminizin açılışını etkileyebilir. Dikkatli olun!"
+#: grub_settings.py:1350
+msgid "📂 Menu Organization"
+msgstr "📂 Menü Organizasyonu"
 
-#: grub_settings.py:1452
-msgid "Quiet Boot (quiet)"
-msgstr "Sessiz Açılış (quiet)"
+#: grub_settings.py:1351
+msgid "Display of old kernels and recovery options"
+msgstr "Eski kernel ve kurtarma seçeneklerinin gösterimi"
 
-#: grub_settings.py:1475
-msgid "Show Recovery Mode"
-msgstr "Kurtarma Modunu Göster"
+#: grub_settings.py:1354
+msgid "Use Submenus"
+msgstr "Alt Menüleri Kullan"
 
-#: grub_settings.py:1498
-msgid "Kernel Parameters"
-msgstr "Çekirdek (Kernel) Parametreleri"
+#: grub_settings.py:1355
+msgid "Group old kernels and recovery options in a submenu"
+msgstr "Eski kernelleri ve kurtarmayı alt menüde grupla"
 
-#: grub_settings.py:1554
+#: grub_settings.py:1813
 msgid "GRUB Settings"
 msgstr "GRUB Ayarları"
 
-#: grub_settings.py:1575
+#: grub_settings.py:1834
 msgid "Reload Settings"
 msgstr "Ayarları Yeniden Yükle"
 
-#: grub_settings.py:1582
+#: grub_settings.py:1841
 msgid "About"
 msgstr "Hakkında"
 
-#: grub_settings.py:1590
+#: grub_settings.py:1849
 msgid "Apply Changes"
 msgstr "Değişiklikleri Uygula"
 
-#: grub_settings.py:1612
+#: grub_settings.py:1871
 msgid "Categories"
 msgstr "Kategoriler"
 
-#: grub_settings.py:1626
+#: grub_settings.py:1885
 msgid "Timing"
 msgstr "Zamanlama"
 
-#: grub_settings.py:1626
+#: grub_settings.py:1885
 msgid "Menu timeout and visibility settings"
 msgstr "Menü süresi ve görünürlük ayarları"
 
-#: grub_settings.py:1627
+#: grub_settings.py:1886
 msgid "Appearance"
 msgstr "Görünüm"
 
-#: grub_settings.py:1627
+#: grub_settings.py:1886
 msgid "Background image and resolution"
 msgstr "Arkaplan resmi ve çözünürlük"
 
-#: grub_settings.py:1628
+#: grub_settings.py:1887
 msgid "System"
 msgstr "Sistem"
 
-#: grub_settings.py:1628
+#: grub_settings.py:1887
 msgid "Default OS and dual-boot"
 msgstr "Varsayılan OS ve dual-boot"
 
-#: grub_settings.py:1629
+#: grub_settings.py:1888
 msgid "Advanced"
 msgstr "Gelişmiş"
 
-#: grub_settings.py:1629
+#: grub_settings.py:1888
 msgid "Kernel parameters and recovery"
 msgstr "Kernel parametreleri ve kurtarma"
 
-#: grub_settings.py:1679
+#: grub_settings.py:1938
 msgid "Click the ❓ button next to each setting for detailed explanation."
 msgstr "Her ayarın yanındaki ❓ butonuna tıklayarak detaylı açıklama alabilirsiniz."
+"Her ayarın yanındaki ❓ butonuna tıklayarak detaylı açıklama alabilirsiniz."
+"Her ayarın yanındaki ❓ butonuna tıklayarak detaylı açıklama alabilirsiniz."
 "Her ayarın yanındaki ❓ butonuna tıklayarak detaylı açıklama alabilirsiniz."

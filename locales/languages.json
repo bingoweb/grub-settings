@@ -1,0 +1,17 @@
+{
+    "available": [
+        {
+            "code": "en",
+            "name": "English",
+            "native": "English",
+            "flag": "🇬🇧"
+        },
+        {
+            "code": "tr",
+            "name": "Turkish",
+            "native": "Türkçe",
+            "flag": "🇹🇷"
+        }
+    ],
+    "default": "en"
+}

@@ -132,7 +132,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "1.2.1"
+APP_VERSION = "1.2.2"
 import shutil
 
 class PoliteAuthDialog(Gtk.Window):

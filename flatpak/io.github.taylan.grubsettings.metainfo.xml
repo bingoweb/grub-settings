@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2025 Taylan Soylu -->
 <component type="desktop-application">
   <id>io.github.taylan.grubsettings</id>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>GPL-3.0</project_license>
+  <project_license>GPL-3.0-only</project_license>
   <name>GRUB Settings</name>
-  <developer_name>Taylan Soylu</developer_name>
+  <developer id="io.github.taylan">
+    <name>Taylan Soylu</name>
+  </developer>
   <summary>A modern and polite GRUB customizer</summary>
   <description>
     <p>
@@ -43,6 +46,8 @@
     </screenshot>
   </screenshots>
   <url type="homepage">https://github.com/bingoweb/grub-settings</url>
+  <url type="bugtracker">https://github.com/bingoweb/grub-settings/issues</url>
+  <url type="vcs-browser">https://github.com/bingoweb/grub-settings</url>
   <releases>
     <release version="1.2" date="2025-12-13">
       <description>

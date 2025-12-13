@@ -1,5 +1,5 @@
 [Desktop Entry]
-Name=Grub Settings
+Name=GRUB Settings
 Comment=Customize your GRUB bootloader easily
 Exec=grub-settings
 Icon=io.github.taylan.grubsettings

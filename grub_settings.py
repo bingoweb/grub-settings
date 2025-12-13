@@ -135,6 +135,23 @@ logger = logging.getLogger(__name__)
 APP_VERSION = "0.1.0"
 import shutil
 
+def get_sudo_command():
+    """Return the sudo command appropriate for the system.
+    Uses 'sudo -S bash -c' which works on all major distributions.
+    -S reads password from stdin (for our polite auth dialog)
+    bash -c executes the script content
+    """
+    # Check for sudo availability
+    if shutil.which("sudo"):
+        return ["sudo", "-S", "bash", "-c"]
+    # Fallback for systems without sudo (rare)
+    elif shutil.which("pkexec"):
+        return ["pkexec", "bash", "-c"]
+    else:
+        # Last resort - assume sudo exists
+        return ["sudo", "-S", "bash", "-c"]
+
+
 class PoliteAuthDialog(Gtk.Window):
     """Kibar ve şirin şifre isteme penceresi (Custom Window)"""
     def __init__(self, parent=None):

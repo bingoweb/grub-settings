@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2025 Taylan Soylu -->
+<component type="desktop-application">
+  <id>io.github.taylan.grubsettings</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <name>GRUB Settings</name>
+  <developer id="io.github.taylan">
+    <name>Taylan Soylu</name>
+  </developer>
+  <summary>A modern and polite GRUB customizer</summary>
+  <description>
+    <p>
+      GRUB Settings is a user-friendly tool to customize your GRUB bootloader.
+      It allows you to change the default operating system, timeout duration, background image, and more.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Change default OS and timeout duration</li>
+      <li>Custom background images and resolution</li>
+      <li>Manage visibility of other operating systems (Windows, etc.)</li>
+      <li>Polite and secure authentication dialog</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.taylan.grubsettings.desktop</launchable>
+  <branding>
+    <color type="primary" scheme_preference="light">#FAFAFA</color>
+    <color type="primary" scheme_preference="dark">#242424</color>
+  </branding>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Time and visibility settings</caption>
+      <image>https://raw.githubusercontent.com/bingoweb/grub-settings/master/screenshots/main.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Appearance customization</caption>
+      <image>https://raw.githubusercontent.com/bingoweb/grub-settings/master/screenshots/appearance.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>System configuration</caption>
+      <image>https://raw.githubusercontent.com/bingoweb/grub-settings/master/screenshots/system.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Advanced kernel options</caption>
+      <image>https://raw.githubusercontent.com/bingoweb/grub-settings/master/screenshots/advanced.png</image>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://github.com/bingoweb/grub-settings</url>
+  <url type="bugtracker">https://github.com/bingoweb/grub-settings/issues</url>
+  <url type="vcs-browser">https://github.com/bingoweb/grub-settings</url>
+  <releases>
+    <release version="0.1.0" date="2025-12-14">
+      <description>
+        <p>Initial release with Settings page, language/theme selection, and full Turkish support.</p>
+      </description>
+    </release>
+  </releases>
+  <content_rating type="oars-1.1"/>
+</component>

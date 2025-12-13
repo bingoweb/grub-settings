@@ -1,0 +1,19 @@
+Package: grub-settings
+Version: 0.1.0
+Section: admin
+Priority: optional
+Architecture: all
+Depends: python3 (>= 3.8), python3-gi, gir1.2-gtk-4.0, gir1.2-adw-1, libgtk-4-1, libadwaita-1-0
+Maintainer: Taylan <taylan@example.com>
+Homepage: https://github.com/bingoweb/grub-settings
+Description: Modern GRUB bootloader configuration tool
+ GRUB Settings is a GTK4/Libadwaita application that provides
+ a user-friendly graphical interface for configuring GRUB
+ bootloader settings on Linux systems.
+ .
+ Features:
+  - Menu timeout and visibility settings
+  - Background image and resolution configuration
+  - Default OS and dual-boot settings
+  - Kernel parameters (quiet, splash, recovery)
+  - Language and theme selection

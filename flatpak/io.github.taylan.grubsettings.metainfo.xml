@@ -3,18 +3,18 @@
   <id>io.github.taylan.grubsettings</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0</project_license>
-  <name>Grub Settings</name>
+  <name>GRUB Settings</name>
   <developer_name>Taylan Soylu</developer_name>
   <summary>A modern and polite GRUB customizer</summary>
   <description>
     <p>
-      Grub Settings is a user-friendly tool to customize your GRUB bootloader.
+      GRUB Settings is a user-friendly tool to customize your GRUB bootloader.
       It allows you to change the default operating system, timeout duration, background image, and more.
     </p>
     <p>Features:</p>
     <ul>
       <li>Change default OS and timeout duration</li>
-      <li>Custom background images and font settings</li>
+      <li>Custom background images and resolution</li>
       <li>Manage visibility of other operating systems (Windows, etc.)</li>
       <li>Polite and secure authentication dialog</li>
     </ul>
@@ -26,8 +26,20 @@
   </branding>
   <screenshots>
     <screenshot type="default">
-      <caption>Main settings interface</caption>
+      <caption>Time and visibility settings</caption>
       <image>https://raw.githubusercontent.com/bingoweb/grub-settings/master/screenshots/main.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Appearance customization</caption>
+      <image>https://raw.githubusercontent.com/bingoweb/grub-settings/master/screenshots/appearance.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>System configuration</caption>
+      <image>https://raw.githubusercontent.com/bingoweb/grub-settings/master/screenshots/system.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Advanced kernel options</caption>
+      <image>https://raw.githubusercontent.com/bingoweb/grub-settings/master/screenshots/advanced.png</image>
     </screenshot>
   </screenshots>
   <url type="homepage">https://github.com/bingoweb/grub-settings</url>

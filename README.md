@@ -6,6 +6,9 @@
 
 Grub Settings is a GUI tool designed to make managing your GRUB bootloader configuration safe, easy, and aesthetically pleasing. It abstracts away the complexity of editing `/etc/default/grub` manually.
 
+![Main Screenshot](screenshots/main.png)
+
+
 ## 🌟 Features
 
 *   **Change Default OS:** Easily select which operating system boots by default.

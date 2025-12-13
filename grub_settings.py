@@ -16,6 +16,7 @@ import os
 import sys
 import logging
 import shlex
+import gettext
 import locale
 import json
 from pathlib import Path
@@ -1046,11 +1047,6 @@ class SystemPage(Gtk.Box):
         # Windows algılamayı başlat (arka planda)
         GLib.idle_add(self.detect_windows)
         
-        content.append(self.windows_group)
-        
-        # Windows algılamayı başlat (arka planda)
-        GLib.idle_add(self.detect_windows)
-        
         # ============ DIL SEÇİMİ BÖLÜMÜ (Yeni) ============
         lang_group = Adw.PreferencesGroup()
         lang_group.set_title(_("Language Settings"))
@@ -1169,6 +1165,68 @@ class SystemPage(Gtk.Box):
         scrolled.set_child(content)
         self.append(scrolled)
     
+    def on_language_changed(self, row, pspec):
+        selected_idx = row.get_selected()
+        new_lang = "default"
+        if selected_idx == 1:
+            new_lang = "en"
+        elif selected_idx == 2:
+            new_lang = "tr"
+            
+        current = config_manager.get("language", "default")
+        # "tr" in "default" is false. "en" in "default" is false.
+        # But if current is "tr", and new is "tr", we don't change.
+        # Logic in init was:
+        # current_lang = config_manager.get("language", "default")
+        # if "tr" in current_lang: index 2
+        
+        # Checking if change is needed
+        if new_lang != current:
+            config_manager.set("language", new_lang)
+            logger.info(f"Language changed to {new_lang}")
+            
+            # Kibar restart diyaloğu
+            dialog = PoliteAuthDialog(self.app.win) 
+            dialog.set_title(_("Restart Required 🔄"))
+            
+            # İçeriği manuel değiştir (biraz hacky ama sınıfı yeniden yapmaktan kolay)
+            # Child yapısını biliyoruz: main_box -> children
+            main_box = dialog.get_child()
+            # 0: icon, 1: title, 2: body, 3: entry, 4: buttons
+            
+            # Icon
+            main_box.get_first_child().set_markup("<span size='40000'>🔄</span>")
+            
+            # Title
+            title_lbl = main_box.get_first_child().get_next_sibling()
+            title_lbl.set_label(_("Language Changed"))
+            
+            # Body
+            body_lbl = title_lbl.get_next_sibling()
+            body_lbl.set_label(_("To apply the new language, I need to make a tiny restart.\nIs that okay correctly? 🥺"))
+            
+            # Entry (gizle)
+            entry = body_lbl.get_next_sibling()
+            entry.set_visible(False)
+            
+            # Buttons
+            btn_box = entry.get_next_sibling()
+            # Cancel
+            btn_box.get_first_child().set_label(_("Later"))
+            # OK
+            ok_btn = btn_box.get_last_child()
+            ok_btn.set_label(_("Restart Now"))
+            
+            def on_response(d, resp):
+                if resp == "ok":
+                    d.close()
+                    restart_app(self.app)
+                else:
+                    d.close()
+                    
+            dialog.set_callback(on_response)
+            dialog.present()
+
     def detect_windows(self):
         """Windows EFI dosyalarını ve GRUB durumunu algıla"""
         try:
@@ -1539,8 +1597,9 @@ class AdvancedPage(Gtk.Box):
 class GrubSettingsApp(Adw.Application):
     """Ana uygulama sınıfı"""
     
-    def __init__(self):
-        super().__init__(application_id="org.grubsettings.app")
+    def __init__(self, **kwargs):
+        kwargs.setdefault('application_id', 'io.github.taylan.grubsettings')
+        super().__init__(**kwargs)
         self.grub_config = GrubConfig()
         self.grub_config.load()
         
@@ -2318,6 +2377,29 @@ class GrubSettingsApp(Adw.Application):
             self.custom_callback(success)
 
 
+
+def global_exception_handler(exctype, value, traceback_obj):
+    import traceback
+    import os
+    from datetime import datetime
+    
+    crash_file = os.path.expanduser("~/grub_settings_crash.txt")
+    with open(crash_file, "w") as f:
+        f.write(f"Crash Time: {datetime.now()}\n")
+        traceback.print_exception(exctype, value, traceback_obj, file=f)
+    print(f"CRITICAL ERROR (Uncaught): {value}")
+    try:
+        logging.critical(f"Uncaught exception: {value}", exc_info=(exctype, value, traceback_obj))
+    except:
+        pass
+
 if __name__ == "__main__":
-    app = GrubSettingsApp()
-    app.run(None)
+    sys.excepthook = global_exception_handler
+    
+    try:
+        app = GrubSettingsApp(application_id="io.github.taylan.grubsettings")
+        app.run(sys.argv)
+    except Exception as e:
+        # This catches startup errors before the main loop takes over fully,
+        # or if run() raises.
+        global_exception_handler(type(e), e, e.__traceback__)

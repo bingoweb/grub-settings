@@ -19,6 +19,8 @@ import shlex
 import gettext
 import locale
 import json
+import threading
+import tempfile
 from pathlib import Path
 
 # ... (logging setup is here) ...
@@ -132,7 +134,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "0.1.1"
+APP_VERSION = "0.1.1.1"
 import shutil
 
 def get_sudo_command():
@@ -1446,7 +1448,14 @@ class SystemPage(Gtk.Box):
             dialog.present()
 
     def detect_windows(self):
-        """Windows EFI dosyalarını ve GRUB durumunu algıla"""
+        """Windows EFI dosyalarını ve GRUB durumunu algıla (Background Thread)"""
+        self.windows_status_row.set_subtitle("⏳ Sistem taranıyor...")
+        thread = threading.Thread(target=self._detect_windows_worker)
+        thread.daemon = True
+        thread.start()
+        return False
+
+    def _detect_windows_worker(self):
         try:
             # Windows EFI dosyasını kontrol et
             windows_efi = os.path.join(PATHS.efi_path, "EFI/Microsoft/Boot/bootmgfw.efi")
@@ -1481,13 +1490,14 @@ class SystemPage(Gtk.Box):
                     pass
             
             # UI'ı güncelle
-            self.update_windows_ui()
+            GLib.idle_add(self.update_windows_ui)
             
         except Exception as e:
             logger.error(f"Windows algılama hatası: {e}")
-            self.windows_status_row.set_subtitle("❌ Algılama hatası")
-        
-        return False  # GLib.idle_add için bir kez çalışsın
+            GLib.idle_add(self._on_detection_error)
+            
+    def _on_detection_error(self):
+        self.windows_status_row.set_subtitle("❌ Algılama hatası")
     
     def update_windows_ui(self):
         """Windows bölümü UI'ını güncelle"""
@@ -1571,15 +1581,17 @@ menuentry "Windows Boot Manager" --class windows --class os {{
         self.app.require_auth(lambda: self.perform_add_windows(script_content))
 
     def perform_add_windows(self, script_content):
-        # Script'i geçici dosyaya yaz
-        temp_file = "/tmp/40_custom_windows"
-        with open(temp_file, 'w') as f:
-            f.write(script_content)
+        # Secure temp file creation
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, prefix='grub_windows_', suffix='.sh') as tf:
+            tf.write(script_content)
+            temp_file = tf.name
         
-        # Script (pkexec yok artık, sudo ile çalışacak)
+        # Script (sudo ile çalışacak)
+        # Added cleanup of temp file
         cmd = f'''
             cp {shlex.quote(temp_file)} /etc/grub.d/40_custom_windows && 
             chmod +x /etc/grub.d/40_custom_windows && 
+            rm -f {shlex.quote(temp_file)} &&
             echo '✅ Windows script oluşturuldu' &&
             echo '' &&
             echo '🔄 GRUB güncelleniyor...' &&
@@ -1984,9 +1996,17 @@ class GrubSettingsApp(Adw.Application):
         self.grub_config.load()
         
         self.cached_password = None  # Sudo şifresi için önbellek
+        self.password_timeout_id = None
         
         self.has_changes = False
         self.win = None
+    
+    def _clear_cached_password(self):
+        """Clear cached password for security"""
+        self.cached_password = None
+        self.password_timeout_id = None
+        logger.info("Security: Cached password cleared due to timeout")
+        return False  # Stop GLib source
     
     def do_activate(self):
         # Add local assets to icon theme search path for development
@@ -2397,6 +2417,12 @@ Built with GTK4 and Libadwaita for a native Linux experience."""),
                     logger.info(f"DEBUG: Auth dialog response: {r}")
                     if r == "ok":
                         self.cached_password = d.get_password()
+                        
+                        # Security: Clear password after 5 minutes (300 seconds)
+                        if self.password_timeout_id:
+                            GLib.source_remove(self.password_timeout_id)
+                        self.password_timeout_id = GLib.timeout_add_seconds(300, self._clear_cached_password)
+                        
                         d.close()
                         callback()
                     else:
@@ -2460,9 +2486,10 @@ Built with GTK4 and Libadwaita for a native Linux experience."""),
         
         new_config = self.grub_config.generate_config()
         
-        temp_file = "/tmp/grub_settings_new"
-        with open(temp_file, 'w') as f:
-            f.write(new_config)
+        # Secure temp file
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, prefix='grub_settings_', suffix='.tmp') as tf:
+            tf.write(new_config)
+            temp_file = tf.name
         
         # Arkaplan resmi kopyalama komutu
         bg_commands = ""
@@ -2589,6 +2616,7 @@ Built with GTK4 and Libadwaita for a native Linux experience."""),
             {f"echo '🖼️ Arkaplan resmi /boot/grub dizinine kopyalanıyor...' && {bg_commands}echo '✓ Arkaplan kopyalandı ve izinler ayarlandı' && echo ''" if bg_commands else ""}
             echo '📝 Yeni ayarlar yazılıyor...'
             cp {shlex.quote(temp_file)} {shlex.quote(GRUB_FILE)}
+            rm -f {shlex.quote(temp_file)}
             echo '✓ Ayarlar güncellendi'
             echo ''
             echo '🔄 GRUB güncelleniyor...'
@@ -2853,7 +2881,13 @@ def global_exception_handler(exctype, value, traceback_obj):
     import os
     from datetime import datetime
     
-    crash_file = os.path.expanduser("~/grub_settings_crash.txt")
+    from datetime import datetime
+    
+    # Use XDG Cache location
+    crash_dir = os.path.expanduser("~/.cache/grub-settings")
+    os.makedirs(crash_dir, exist_ok=True)
+    crash_file = os.path.join(crash_dir, "crash.log")
+    
     with open(crash_file, "w") as f:
         f.write(f"Crash Time: {datetime.now()}\n")
         traceback.print_exception(exctype, value, traceback_obj, file=f)

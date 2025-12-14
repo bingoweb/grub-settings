@@ -132,7 +132,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "0.1.0"
+APP_VERSION = "0.1.1"
 import shutil
 
 def get_sudo_command():
@@ -1989,6 +1989,16 @@ class GrubSettingsApp(Adw.Application):
         self.win = None
     
     def do_activate(self):
+        # Add local assets to icon theme search path for development
+        try:
+            display = Gdk.Display.get_default()
+            icon_theme = Gtk.IconTheme.get_for_display(display)
+            assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+            if os.path.exists(assets_dir):
+                icon_theme.add_search_path(assets_dir)
+        except Exception as e:
+            logger.warning(f"Failed to add icon search path: {e}")
+
         # Apply saved theme preference
         saved_theme = config_manager.get("theme", "system")
         style_manager = Adw.StyleManager.get_default()
@@ -2001,6 +2011,24 @@ class GrubSettingsApp(Adw.Application):
         
         self.win = Adw.ApplicationWindow(application=self)
         self.win.set_title(_("GRUB Settings"))
+        
+        # Set icon for local development
+        icon_path = os.path.join(os.path.dirname(__file__), "assets", "icon.png")
+        if os.path.exists(icon_path):
+            try:
+                icon_file = Gio.File.new_for_path(icon_path)
+                icon_texture = Gdk.Texture.new_from_file(icon_file)
+                self.win.set_icon_name("io.github.taylan.grubsettings") # Try system icon first
+                # Function to set default icon for the window specifically not available in GTK4 ApplicationWindow directly
+                # but we can set the default icon for the display or use icon theme
+                
+                # For local run, we'll try to add valid icon path to theme or just rely on About dialog
+                # GTK4/Adwaita handle window icons differently (usually via .desktop file)
+                # But we can set the icon_name which we did in __init__
+                pass 
+            except Exception as e:
+                logger.warning(f"Failed to load icon: {e}")
+
         self.win.set_default_size(900, 700)
         self.win.set_size_request(700, 500)
         

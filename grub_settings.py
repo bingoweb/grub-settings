@@ -1,19 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-GRUB Ayarları - Ubuntu için gelişmiş GRUB yapılandırma aracı
-Her ayar için detaylı açıklamalar içerir
-
-Version: 1.1
-"""
-
-import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
-from gi.repository import Gtk, Adw, Gio, GdkPixbuf, GLib, Gdk
-import subprocess
-import os
 import sys
+import os
 import logging
 import shlex
 import gettext
@@ -2747,35 +2735,10 @@ Built with GTK4 and Libadwaita for a native Linux experience."""),
             self.custom_callback(success)
 
 
+# Ensure the current directory is in the python path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-def global_exception_handler(exctype, value, traceback_obj):
-    import traceback
-    import os
-    from datetime import datetime
-    
-    from datetime import datetime
-    
-    # Use XDG Cache location
-    crash_dir = os.path.expanduser("~/.cache/grub-settings")
-    os.makedirs(crash_dir, exist_ok=True)
-    crash_file = os.path.join(crash_dir, "crash.log")
-    
-    with open(crash_file, "w") as f:
-        f.write(f"Crash Time: {datetime.now()}\n")
-        traceback.print_exception(exctype, value, traceback_obj, file=f)
-    print(f"CRITICAL ERROR (Uncaught): {value}")
-    try:
-        logging.critical(f"Uncaught exception: {value}", exc_info=(exctype, value, traceback_obj))
-    except:
-        pass
+from grub_settings_pkg.main import main
 
 if __name__ == "__main__":
-    sys.excepthook = global_exception_handler
-    
-    try:
-        app = GrubSettingsApp(application_id="io.github.taylan.grubsettings")
-        app.run(sys.argv)
-    except Exception as e:
-        # This catches startup errors before the main loop takes over fully,
-        # or if run() raises.
-        global_exception_handler(type(e), e, e.__traceback__)
+    main()

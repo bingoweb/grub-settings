@@ -22,6 +22,10 @@ modules:
       # Add shebang for source execution
       - sed -i '1i#!/usr/bin/env python3' /app/bin/grub-settings
       
+      # Copy package folder
+      - mkdir -p /app/share/grub-settings/grub_settings_pkg
+      - cp -r grub_settings_pkg /app/share/grub-settings/
+
       # Copy assets folder
       - mkdir -p /app/share/grub-settings
       - cp -r assets /app/share/grub-settings/assets
@@ -40,4 +44,3 @@ modules:
       - type: git
         url: https://github.com/bingoweb/grub-settings.git
         commit: 89a2ead797da18312cd1385695dde1933a55b97d
-

@@ -451,11 +451,16 @@ class GrubSettingsApp(Adw.Application):
                             process.wait()
                             GLib.idle_add(self.on_command_finished, process.returncode)
                             return False
-                    except Exception as e:
+                    except Exception as exc:
+                        logger.exception("Failed to read GRUB update output", exc_info=exc)
+                        GLib.idle_add(self.append_terminal_line, _("❌ Error reading command output.\n"))
+                        GLib.idle_add(self.on_command_finished, 1)
                         return False
 
                 GLib.timeout_add(50, read_output)
-            except Exception as e:
+            except Exception as exc:
+                logger.exception("Failed to start GRUB update command", exc_info=exc)
+                GLib.idle_add(self.append_terminal_line, _("❌ Failed to start update command.\n"))
                 GLib.idle_add(self.on_command_finished, 1)
 
         GLib.timeout_add(500, lambda: (run_command(), False)[1])
@@ -529,7 +534,9 @@ class GrubSettingsApp(Adw.Application):
                     try:
                         process.stdin.write(self.cached_password + "\n")
                         process.stdin.flush()
-                    except: pass
+                    except Exception as exc:
+                        logger.exception("Failed to send cached password", exc_info=exc)
+                        GLib.idle_add(self.append_terminal_line, _("❌ Failed to send password to command.\n"))
 
                 def read_output():
                     try:
@@ -550,8 +557,19 @@ class GrubSettingsApp(Adw.Application):
 
                             if callback: callback(success)
                             return False
-                    except: return False
+                    except Exception as exc:
+                        logger.exception("Failed to read command output", exc_info=exc)
+                        GLib.idle_add(self.term_title.set_label, _("❌ Failed"))
+                        GLib.idle_add(self.append_terminal_line, _("❌ Error reading command output.\n"))
+                        if callback:
+                            GLib.idle_add(callback, False)
+                        return False
                 GLib.timeout_add(50, read_output)
-            except: pass
+            except Exception as exc:
+                logger.exception("Failed to start command", exc_info=exc)
+                GLib.idle_add(self.term_title.set_label, _("❌ Failed"))
+                GLib.idle_add(self.append_terminal_line, _("❌ Failed to start command.\n"))
+                if callback:
+                    GLib.idle_add(callback, False)
 
         GLib.timeout_add(500, lambda: (run_command(), False)[1])

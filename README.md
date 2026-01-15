@@ -2,7 +2,7 @@
 
 # GRUB Settings ⚙️
 
-![Version](https://img.shields.io/badge/version-0.1.2--beta-blue)
+![Version](https://img.shields.io/badge/version-0.1.4--beta-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Linux-orange)
 ![GTK](https://img.shields.io/badge/GTK-4.0-red)
@@ -18,6 +18,12 @@
 ---
 
 ## 🆕 Latest Changes
+### v0.1.4
+- No changes detected since last tag.
+
+### v0.1.3
+- Initial release or no tags found.
+
 ### v0.1.2
 - Merge pull request #8 from bingoweb/refactor-polite-auth-dialog-7708239785296805798
 
@@ -101,10 +107,10 @@ The easiest way - dependencies are installed automatically!
 
 ```bash
 # Download the package
-wget https://github.com/bingoweb/grub-settings/releases/latest/download/grub-settings_0.1.2_all.deb
+wget https://github.com/bingoweb/grub-settings/releases/latest/download/grub-settings_0.1.4_all.deb
 
 # Install with dependencies
-sudo apt install ./grub-settings_0.1.2_all.deb
+sudo apt install ./grub-settings_0.1.4_all.deb
 
 # Run from menu or terminal
 grub-settings
@@ -229,10 +235,25 @@ grub-settings/
 
 ```bash
 # Build .deb package
-dpkg-deb --build packaging/deb packaging/grub-settings_0.1.2_all.deb
+dpkg-deb --build packaging/deb packaging/grub-settings_0.1.4_all.deb
 
 # Test Flatpak
 flatpak-builder --user --install build-dir flatpak/io.github.taylan.grubsettings.yml
+```
+
+### Automatic Releases
+
+This repo ships with a Git hook that runs `release_manager.py` after each commit to bump the patch version and keep the README changelog up to date.
+
+```bash
+# Enable repo hooks
+git config core.hooksPath .githooks
+```
+
+To skip the auto-release for a single commit, set an environment variable:
+
+```bash
+GRUB_SETTINGS_AUTO_RELEASE=0 git commit -m "docs: update readme"
 ```
 
 ---

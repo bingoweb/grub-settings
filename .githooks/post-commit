@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+commit_message="$(git log -1 --pretty=%s)"
+
+if [[ "${GRUB_SETTINGS_AUTO_RELEASE:-1}" == "0" ]]; then
+  exit 0
+fi
+
+if [[ "${GRUB_SETTINGS_RELEASE_RUNNING:-}" == "1" ]]; then
+  exit 0
+fi
+
+if [[ "${commit_message}" =~ ^chore:\ release\ v ]]; then
+  exit 0
+fi
+
+export GRUB_SETTINGS_RELEASE_RUNNING=1
+python3 release_manager.py patch

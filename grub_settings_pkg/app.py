@@ -1,10 +1,8 @@
 import os
-import sys
-import shutil
 import tempfile
 import shlex
 import subprocess
-from gi.repository import Gtk, Adw, Gio, Gdk, GLib
+from gi.repository import Gtk, Adw, Gdk, GLib
 from .config import config_manager, GrubConfig
 from .utils import logger, get_sudo_command, get_path
 from .system import GRUB_FILE, PATHS

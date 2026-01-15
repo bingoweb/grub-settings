@@ -343,13 +343,14 @@ class GrubSettingsApp(Adw.Application):
 
         self.show_terminal_dialog(temp_file, bg_commands)
 
-    def show_terminal_dialog(self, temp_file, bg_commands):
-        self.term_dialog = Adw.Window()
-        self.term_dialog.set_title(_("🔄 Updating GRUB..."))
-        self.term_dialog.set_default_size(600, 400)
-        self.term_dialog.set_modal(True)
-        self.term_dialog.set_transient_for(self.win)
-        self.term_dialog.set_hide_on_close(True)
+    def _build_terminal_dialog(self, title, initial_text, hide_on_close=False):
+        dialog = Adw.Window()
+        dialog.set_title(title)
+        dialog.set_default_size(600, 400)
+        dialog.set_modal(True)
+        dialog.set_transient_for(self.win)
+        if hide_on_close:
+            dialog.set_hide_on_close(True)
 
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
@@ -360,9 +361,7 @@ class GrubSettingsApp(Adw.Application):
         title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         spinner = Gtk.Spinner()
         spinner.start()
-        self.term_spinner = spinner
-        title_label = Gtk.Label(label=_("Updating GRUB..."))
-        self.term_title = title_label
+        title_label = Gtk.Label(label=title)
         title_box.append(spinner)
         title_box.append(title_label)
         header.set_title_widget(title_box)
@@ -370,36 +369,56 @@ class GrubSettingsApp(Adw.Application):
 
         term_frame = Gtk.Frame()
         term_frame.add_css_class("terminal-frame")
-        term_frame.set_margin_start(16); term_frame.set_margin_end(16)
-        term_frame.set_margin_top(16); term_frame.set_margin_bottom(16)
+        term_frame.set_margin_start(16)
+        term_frame.set_margin_end(16)
+        term_frame.set_margin_top(16)
+        term_frame.set_margin_bottom(16)
 
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_vexpand(True)
 
-        self.term_textview = Gtk.TextView()
-        self.term_textview.set_editable(False)
-        self.term_textview.set_cursor_visible(False)
-        self.term_textview.set_monospace(True)
-        self.term_textview.add_css_class("terminal-text")
+        textview = Gtk.TextView()
+        textview.set_editable(False)
+        textview.set_cursor_visible(False)
+        textview.set_monospace(True)
+        textview.add_css_class("terminal-text")
 
-        self.term_buffer = self.term_textview.get_buffer()
-        self.term_buffer.set_text(f"$ {PATHS.update_cmd}\n\n")
+        buffer = textview.get_buffer()
+        buffer.set_text(initial_text)
 
-        scrolled.set_child(self.term_textview)
+        scrolled.set_child(textview)
         term_frame.set_child(scrolled)
         main_box.append(term_frame)
 
-        self.term_dialog.set_content(main_box)
+        dialog.set_content(main_box)
 
-        # Apply CSS for terminal
         css_provider = Gtk.CssProvider()
         css = """
         .terminal-frame { background: #1e1e1e; border-radius: 12px; }
         .terminal-text { background: #1e1e1e; color: #00ff00; font-family: monospace; font-size: 12px; }
         """
         css_provider.load_from_data(css.encode())
-        Gtk.StyleContext.add_provider_for_display(self.term_dialog.get_display(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        Gtk.StyleContext.add_provider_for_display(
+            dialog.get_display(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
 
+        return dialog, header, spinner, title_label, textview, buffer
+
+    def show_terminal_dialog(self, temp_file, bg_commands):
+        (
+            self.term_dialog,
+            _header,
+            self.term_spinner,
+            self.term_title,
+            self.term_textview,
+            self.term_buffer,
+        ) = self._build_terminal_dialog(
+            _("🔄 Updating GRUB..."),
+            f"$ {PATHS.update_cmd}\n\n",
+            hide_on_close=True
+        )
         self.term_dialog.present()
 
         script_content = f"""
@@ -487,37 +506,17 @@ class GrubSettingsApp(Adw.Application):
         # ... Reuse similar logic as show_terminal_dialog or abstract it
         # For brevity, I'm assuming similar implementation or reused code
         # I'll implement a simplified version here for system page callbacks
-        self.term_dialog = Adw.Window()
-        self.term_dialog.set_title(title)
-        self.term_dialog.set_default_size(600, 400)
-        self.term_dialog.set_modal(True)
-        self.term_dialog.set_transient_for(self.win)
-
-        # ... (Setup UI similar to above)
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        header = Adw.HeaderBar()
-        header.set_show_end_title_buttons(False)
-
-        title_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        spinner = Gtk.Spinner()
-        spinner.start()
-        self.term_spinner = spinner
-        title_label = Gtk.Label(label=title)
-        self.term_title = title_label
-        title_box.append(spinner)
-        title_box.append(title_label)
-        header.set_title_widget(title_box)
-        main_box.append(header)
-
-        scrolled = Gtk.ScrolledWindow()
-        self.term_textview = Gtk.TextView()
-        self.term_textview.set_editable(False)
-        self.term_buffer = self.term_textview.get_buffer()
-        self.term_buffer.set_text(f"$ {title}\n\n")
-        scrolled.set_child(self.term_textview)
-        main_box.append(scrolled)
-
-        self.term_dialog.set_content(main_box)
+        (
+            self.term_dialog,
+            header,
+            self.term_spinner,
+            self.term_title,
+            self.term_textview,
+            self.term_buffer,
+        ) = self._build_terminal_dialog(
+            title,
+            f"$ {title}\n\n"
+        )
         self.term_dialog.present()
 
         full_cmd = get_sudo_command() + [cmd]

@@ -124,7 +124,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "0.1.2"
+APP_VERSION = "0.1.4"
 import shutil
 
 def get_sudo_command():

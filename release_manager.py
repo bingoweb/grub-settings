@@ -106,6 +106,9 @@ def update_file_content(filepath, current_ver, new_ver, patterns):
          new_content = re.sub(r'version-[\d\.]+(-beta)?-', f'version-{new_ver}-', new_content)
          new_content = re.sub(r'grub-settings_[\d\.]+_all.deb', f'grub-settings_{new_ver}_all.deb', new_content)
 
+    if filepath == "packaging/deb/DEBIAN/control":
+        new_content = re.sub(r'^Version:\s*[\w\.\-]+', f'Version: {new_ver}', new_content, flags=re.MULTILINE)
+
     if content != new_content:
         with open(filepath, "w") as f:
             f.write(new_content)

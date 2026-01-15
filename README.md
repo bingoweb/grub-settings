@@ -2,7 +2,7 @@
 
 # GRUB Settings ⚙️
 
-![Version](https://img.shields.io/badge/version-0.1.0--beta-blue)
+![Version](https://img.shields.io/badge/version-0.1.2--beta-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![Platform](https://img.shields.io/badge/platform-Linux-orange)
 ![GTK](https://img.shields.io/badge/GTK-4.0-red)
@@ -16,6 +16,11 @@
 [**📦 Download**](#-installation) • [**✨ Features**](#-features) • [**📖 Documentation**](#-documentation) • [**🤝 Contributing**](#-contributing)
 
 ---
+
+## 🆕 Latest Changes
+### v0.1.2
+- Merge pull request #8 from bingoweb/refactor-polite-auth-dialog-7708239785296805798
+
 
 </div>
 
@@ -96,10 +101,10 @@ The easiest way - dependencies are installed automatically!
 
 ```bash
 # Download the package
-wget https://github.com/bingoweb/grub-settings/releases/latest/download/grub-settings_0.1.0_all.deb
+wget https://github.com/bingoweb/grub-settings/releases/latest/download/grub-settings_0.1.2_all.deb
 
 # Install with dependencies
-sudo apt install ./grub-settings_0.1.0_all.deb
+sudo apt install ./grub-settings_0.1.2_all.deb
 
 # Run from menu or terminal
 grub-settings
@@ -224,7 +229,7 @@ grub-settings/
 
 ```bash
 # Build .deb package
-dpkg-deb --build packaging/deb packaging/grub-settings_0.1.0_all.deb
+dpkg-deb --build packaging/deb packaging/grub-settings_0.1.2_all.deb
 
 # Test Flatpak
 flatpak-builder --user --install build-dir flatpak/io.github.taylan.grubsettings.yml

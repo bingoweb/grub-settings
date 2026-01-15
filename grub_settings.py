@@ -224,10 +224,25 @@ class PoliteAuthDialog(Gtk.Window):
             main_box.append(btn_box)
             
             self.set_child(main_box)
+
+            # UX Improvement: Close on Escape
+            controller = Gtk.EventControllerKey()
+            controller.connect("key-pressed", self.on_key_pressed)
+            self.add_controller(controller)
+
+            # UX Improvement: Auto-focus password entry
+            self.set_focus(self.password_entry)
+
             logger.info("DEBUG: PoliteAuthDialog initialized successfully")
             
         except Exception as e:
             logger.error(f"CRITICAL: PoliteAuthDialog init failed: {e}", exc_info=True)
+
+    def on_key_pressed(self, controller, keyval, keycode, state):
+        if keyval == Gdk.KEY_Escape:
+            self.on_cancel_clicked(None)
+            return True
+        return False
 
     def set_callback(self, callback):
         self._callback = callback

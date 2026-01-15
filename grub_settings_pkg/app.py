@@ -277,30 +277,20 @@ class GrubSettingsApp(Adw.Application):
             callback()
             return
 
-        def show_dialog():
-            try:
-                self.auth_dialog_instance = PoliteAuthDialog(self.win)
+        dialog = PoliteAuthDialog(self.win)
 
-                def on_resp(d, r):
-                    if r == "ok":
-                        self.cached_password = d.get_password()
-                        if self.password_timeout_id:
-                            GLib.source_remove(self.password_timeout_id)
-                        self.password_timeout_id = GLib.timeout_add_seconds(300, self._clear_cached_password)
-                        d.close()
-                        callback()
-                    else:
-                        d.close()
-                    self.auth_dialog_instance = None
+        def on_response(d, response_id):
+            if response_id == "ok":
+                self.cached_password = d.get_password()
 
-                self.auth_dialog_instance.set_callback(on_resp)
-                self.auth_dialog_instance.present()
-                return False
-            except Exception as e:
-                logger.error(f"Auth dialog error: {e}")
-                return False
+                if self.password_timeout_id:
+                    GLib.source_remove(self.password_timeout_id)
+                self.password_timeout_id = GLib.timeout_add_seconds(300, self._clear_cached_password)
 
-        GLib.timeout_add(200, show_dialog)
+                callback()
+
+        dialog.connect("response", on_response)
+        dialog.present()
 
     def on_confirm_response(self, dialog, response):
         dialog.close()

@@ -140,80 +140,35 @@ def create_help_button(help_key, parent_window):
     btn.connect("clicked", show_help)
     return btn
 
-class PoliteAuthDialog(Gtk.Window):
+class PoliteAuthDialog(Adw.MessageDialog):
     """Polite password request dialog."""
     def __init__(self, parent=None):
-        try:
-            super().__init__()
-            logger.info("DEBUG: PoliteAuthDialog initializing...")
+        super().__init__(transient_for=parent)
+        self.set_heading(_("Permission Required 🌸"))
+        self.set_body(_("I need administrator permission to perform this action.\nCould you please enter your password? 🥺"))
+        self.add_response("cancel", _("Cancel"))
+        self.add_response("ok", _("OK"))
+        self.set_response_appearance("ok", Adw.ResponseAppearance.SUGGESTED)
+        self.set_default_response("ok")
+        self.set_close_response("cancel")
 
-            self.set_title(_("Permission Required 🌸"))
-            self.set_default_size(350, 300)
-            self.set_resizable(False)
-            self.set_modal(True)
+        # Password entry
+        self.password_entry = Gtk.PasswordEntry()
+        self.password_entry.set_placeholder_text(_("Sudo password"))
+        self.password_entry.set_activates_default(True)
+        self.password_entry.set_margin_top(12)
+        self.password_entry.set_margin_bottom(12)
 
-            if parent:
-                self.set_transient_for(parent)
+        # Container for icon + password entry
+        pass_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
 
-            self._callback = None
+        icon = Gtk.Label()
+        icon.set_markup("<span size='40000'>🔐</span>")
 
-            main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
-            main_box.set_margin_top(24)
-            main_box.set_margin_bottom(24)
-            main_box.set_margin_start(24)
-            main_box.set_margin_end(24)
+        pass_box.append(icon)
+        pass_box.append(self.password_entry)
 
-            icon_label = Gtk.Label()
-            icon_label.set_markup("<span size='40000'>🔐</span>")
-            main_box.append(icon_label)
-
-            title = Gtk.Label(label=_("Permission Required"))
-            title.add_css_class("title-2")
-            main_box.append(title)
-
-            body_text = _("I need administrator permission to perform this action.\nCould you please enter your password? 🥺")
-            body = Gtk.Label(label=body_text)
-            body.set_justify(Gtk.Justification.CENTER)
-            body.set_wrap(True)
-            main_box.append(body)
-
-            self.password_entry = Gtk.PasswordEntry()
-            self.password_entry.set_property("placeholder-text", _("Sudo password"))
-            self.password_entry.connect("activate", self.on_ok_clicked)
-            self.password_entry.set_margin_top(8)
-            self.password_entry.set_margin_bottom(8)
-            main_box.append(self.password_entry)
-
-            btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-            btn_box.set_halign(Gtk.Align.CENTER)
-            btn_box.set_margin_top(8)
-
-            cancel_btn = Gtk.Button(label=_("Cancel"))
-            cancel_btn.connect("clicked", self.on_cancel_clicked)
-
-            ok_btn = Gtk.Button(label=_("OK"))
-            ok_btn.add_css_class("suggested-action")
-            ok_btn.connect("clicked", self.on_ok_clicked)
-
-            btn_box.append(cancel_btn)
-            btn_box.append(ok_btn)
-            main_box.append(btn_box)
-
-            self.set_child(main_box)
-
-        except Exception as e:
-            logger.error(f"CRITICAL: PoliteAuthDialog init failed: {e}", exc_info=True)
-
-    def set_callback(self, callback):
-        self._callback = callback
-
-    def on_ok_clicked(self, btn):
-        if self._callback:
-            self._callback(self, "ok")
-
-    def on_cancel_clicked(self, btn):
-        if self._callback:
-            self._callback(self, "cancel")
+        self.set_extra_child(pass_box)
 
     def get_password(self):
         return self.password_entry.get_text()

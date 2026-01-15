@@ -9,11 +9,19 @@ import locale
 import json
 import threading
 import tempfile
+import subprocess
 from pathlib import Path
 
 # ... (logging setup is here) ...
 
 # ... (get_path function is here) ...
+
+import gi
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Gdk, Gio, Adw, GdkPixbuf, GLib
+
+IS_FLATPAK = os.path.exists("/.flatpak-info")
 
 def get_path(relative_path):
     try:

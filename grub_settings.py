@@ -348,6 +348,9 @@ GRUB_CFG_FILE = PATHS.grub_cfg
 
 import re
 
+MENU_ENTRY_PATTERN = re.compile(r"menuentry\s+['\"]([^'\"]+)['\"]")
+
+
 def get_grub_menu_entries():
     """GRUB menü girdilerini oku ve liste olarak döndür"""
     entries = []
@@ -362,8 +365,7 @@ def get_grub_menu_entries():
         if result.returncode == 0:
             content = result.stdout
             # menuentry 'Ubuntu' veya menuentry "Windows Boot Manager" formatlarını bul
-            pattern = r"menuentry\s+['\"]([^'\"]+)['\"]"
-            matches = re.findall(pattern, content)
+            matches = MENU_ENTRY_PATTERN.findall(content)
             # Sadece ana menü girdilerini al (submenu içindekiler hariç)
             for match in matches:
                 # Recovery ve eski kernel'ları filtrele (isteğe bağlı)

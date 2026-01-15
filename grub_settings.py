@@ -125,7 +125,7 @@ log_dir.mkdir(parents=True, exist_ok=True)
 log_file = log_dir / "app.log"
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s: %(message)s',
     handlers=[
         logging.FileHandler(log_file),
@@ -159,7 +159,7 @@ class PoliteAuthDialog(Gtk.Window):
     def __init__(self, parent=None):
         try:
             super().__init__()
-            logger.info("DEBUG: PoliteAuthDialog initializing...")
+            logger.debug("PoliteAuthDialog initializing...")
             
             self.set_title(_("Permission Required 🌸"))
             self.set_default_size(350, 300)
@@ -169,9 +169,9 @@ class PoliteAuthDialog(Gtk.Window):
             if parent:
                 try:
                     self.set_transient_for(parent)
-                    logger.info("DEBUG: Parent set successfully")
+                    logger.debug("Parent set successfully")
                 except Exception as e:
-                    logger.error(f"DEBUG: Failed to set parent: {e}")
+                    logger.error(f"Failed to set parent: {e}")
             
             self._callback = None
     
@@ -224,7 +224,7 @@ class PoliteAuthDialog(Gtk.Window):
             main_box.append(btn_box)
             
             self.set_child(main_box)
-            logger.info("DEBUG: PoliteAuthDialog initialized successfully")
+            logger.debug("PoliteAuthDialog initialized successfully")
             
         except Exception as e:
             logger.error(f"CRITICAL: PoliteAuthDialog init failed: {e}", exc_info=True)
@@ -2407,14 +2407,14 @@ Built with GTK4 and Libadwaita for a native Linux experience."""),
 
         def show_dialog():
             try:
-                logger.info("DEBUG: show_dialog started")
+                logger.debug("show_dialog started")
                 # GC'den korumak için instance'ı sakla
-                logger.info("DEBUG: Creating PoliteAuthDialog...")
+                logger.debug("Creating PoliteAuthDialog...")
                 self.auth_dialog_instance = PoliteAuthDialog(self.win)
-                logger.info("DEBUG: PoliteAuthDialog created")
+                logger.debug("PoliteAuthDialog created")
                 
                 def on_resp(d, r):
-                    logger.info(f"DEBUG: Auth dialog response: {r}")
+                    logger.debug(f"Auth dialog response: {r}")
                     if r == "ok":
                         self.cached_password = d.get_password()
                         
@@ -2430,9 +2430,9 @@ Built with GTK4 and Libadwaita for a native Linux experience."""),
                     self.auth_dialog_instance = None
                 
                 self.auth_dialog_instance.set_callback(on_resp)
-                logger.info("DEBUG: Presenting dialog...")
+                logger.debug("Presenting dialog...")
                 self.auth_dialog_instance.present()
-                logger.info("DEBUG: Dialog presented")
+                logger.debug("Dialog presented")
                 return False
             except Exception as e:
                 logger.error(f"CRITICAL: Failed to show auth dialog: {e}", exc_info=True)
@@ -2458,10 +2458,10 @@ Built with GTK4 and Libadwaita for a native Linux experience."""),
         advanced_values = self.advanced_page.get_values()
         
         # DEBUG: Log collected values
-        logger.info(f"DEBUG timing_values: {timing_values}")
-        logger.info(f"DEBUG system_values: {system_values}")
-        logger.info(f"DEBUG appearance_values: {list(appearance_values.keys())}")
-        logger.info(f"DEBUG advanced_values: {advanced_values}")
+        logger.debug(f"timing_values: {timing_values}")
+        logger.debug(f"system_values: {system_values}")
+        logger.debug(f"appearance_values: {list(appearance_values.keys())}")
+        logger.debug(f"advanced_values: {advanced_values}")
         
         # Handle save default setting
         if timing_values.get("GRUB_DEFAULT") == "saved":

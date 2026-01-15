@@ -1,0 +1,103 @@
+/* Sidebar navigasyon */
+.navigation-sidebar row {
+    padding: 14px 16px;
+    margin: 4px 8px;
+    border-radius: 12px;
+    transition: all 200ms ease;
+}
+
+.navigation-sidebar row:hover {
+    background: alpha(@accent_bg_color, 0.3);
+}
+
+.navigation-sidebar row:selected {
+    background: @accent_bg_color;
+    color: @accent_fg_color;
+}
+
+/* Başlıklar */
+.title-1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.title-3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: @accent_color;
+}
+
+.title-4 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: alpha(@theme_fg_color, 0.6);
+}
+
+/* Sidebar */
+.sidebar {
+    background: alpha(@card_bg_color, 0.4);
+    border-right: 1px solid alpha(@borders, 0.3);
+}
+
+/* Kartlar ve kutular */
+.card {
+    background: alpha(@card_bg_color, 0.9);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 8px alpha(black, 0.1);
+}
+
+/* Uyarı kartı */
+.warning-card {
+    background: linear-gradient(135deg, alpha(@warning_bg_color, 0.15), alpha(@warning_bg_color, 0.25));
+    border: 1px solid alpha(@warning_color, 0.4);
+    padding: 14px 18px;
+    border-radius: 12px;
+}
+
+/* Haplik butonlar */
+.pill {
+    border-radius: 999px;
+    padding: 10px 24px;
+    font-weight: 500;
+}
+
+/* Önizleme çerçevesi */
+.preview-frame {
+    background: alpha(@card_bg_color, 0.5);
+    border: 2px dashed alpha(@borders, 0.5);
+    border-radius: 16px;
+}
+
+/* Grup başlıkları */
+preferencesgroup > box > label.title {
+    font-weight: 700;
+}
+
+/* Switch stilleri */
+switch {
+    border-radius: 999px;
+}
+
+/* Scale/slider */
+scale trough {
+    border-radius: 8px;
+}
+
+scale highlight {
+    border-radius: 8px;
+}
+
+/* Header bar */
+headerbar {
+    padding: 6px 8px;
+}
+
+/* Durum çubuğu */
+.status-bar {
+    background: alpha(@card_bg_color, 0.5);
+    border-top: 1px solid alpha(@borders, 0.3);
+}

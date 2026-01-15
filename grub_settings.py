@@ -1,19 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-GRUB Ayarları - Ubuntu için gelişmiş GRUB yapılandırma aracı
-Her ayar için detaylı açıklamalar içerir
-
-Version: 1.1
-"""
-
-import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
-from gi.repository import Gtk, Adw, Gio, GdkPixbuf, GLib, Gdk
-import subprocess
-import os
 import sys
+import os
 import logging
 import shlex
 import gettext
@@ -94,6 +82,8 @@ class ConfigManager:
         return self.config.get(key, default)
 
     def set(self, key, value):
+        if self.config.get(key) == value:
+            return
         self.config[key] = value
         self.save_config()
 
@@ -225,9 +215,25 @@ class PoliteAuthDialog(Gtk.Window):
             
             self.set_child(main_box)
             logger.debug("PoliteAuthDialog initialized successfully")
+
+            # UX Improvement: Close on Escape
+            controller = Gtk.EventControllerKey()
+            controller.connect("key-pressed", self.on_key_pressed)
+            self.add_controller(controller)
+
+            # UX Improvement: Auto-focus password entry
+            self.set_focus(self.password_entry)
+
+            logger.info("DEBUG: PoliteAuthDialog initialized successfully")
             
         except Exception as e:
             logger.error(f"CRITICAL: PoliteAuthDialog init failed: {e}", exc_info=True)
+
+    def on_key_pressed(self, controller, keyval, keycode, state):
+        if keyval == Gdk.KEY_Escape:
+            self.on_cancel_clicked(None)
+            return True
+        return False
 
     def set_callback(self, callback):
         self._callback = callback
@@ -331,6 +337,9 @@ GRUB_CFG_FILE = PATHS.grub_cfg
 
 import re
 
+MENU_ENTRY_PATTERN = re.compile(r"menuentry\s+['\"]([^'\"]+)['\"]")
+
+
 def get_grub_menu_entries():
     """GRUB menü girdilerini oku ve liste olarak döndür"""
     entries = []
@@ -345,8 +354,7 @@ def get_grub_menu_entries():
         if result.returncode == 0:
             content = result.stdout
             # menuentry 'Ubuntu' veya menuentry "Windows Boot Manager" formatlarını bul
-            pattern = r"menuentry\s+['\"]([^'\"]+)['\"]"
-            matches = re.findall(pattern, content)
+            matches = MENU_ENTRY_PATTERN.findall(content)
             # Sadece ana menü girdilerini al (submenu içindekiler hariç)
             for match in matches:
                 # Recovery ve eski kernel'ları filtrele (isteğe bağlı)
@@ -745,168 +753,6 @@ class TimingPage(Gtk.Box):
             "GRUB_TIMEOUT": str(int(self.timeout_scale.get_value())),
             "GRUB_TIMEOUT_STYLE": style
         }
-        
-        return values
-
-
-class AdvancedPage(Gtk.Box):
-    """Advanced settings page"""
-    
-    def __init__(self, app):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=16)
-        self.app = app
-        self.set_margin_top(24)
-        self.set_margin_bottom(24)
-        self.set_margin_start(24)
-        self.set_margin_end(24)
-        
-        scrolled = Gtk.ScrolledWindow()
-        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scrolled.set_vexpand(True)
-        
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
-        
-        # Header
-        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        title_icon = Gtk.Label(label="🔧")
-        title_icon.add_css_class("title-1")
-        title = Gtk.Label(label=_("Advanced Settings"))
-        title.add_css_class("title-1")
-        title.set_halign(Gtk.Align.START)
-        header_box.append(title_icon)
-        header_box.append(title)
-        content.append(header_box)
-        
-        desc = Gtk.Label(label=_("Customize kernel parameters and boot behavior."))
-        desc.add_css_class("dim-label")
-        desc.set_halign(Gtk.Align.START)
-        desc.set_wrap(True)
-        content.append(desc)
-        
-        # Warning
-        warning_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        warning_box.add_css_class("card")
-        warning_box.add_css_class("warning-card")
-        warning_box.set_margin_bottom(8)
-        warning_icon = Gtk.Label(label="⚠️")
-        warning_label = Gtk.Label(label=_("Settings in this section may affect system boot. Be careful!"))
-        warning_label.set_wrap(True)
-        warning_box.append(warning_icon)
-        warning_box.append(warning_label)
-        content.append(warning_box)
-        
-        current_params = app.grub_config.get("GRUB_CMDLINE_LINUX_DEFAULT", "quiet splash")
-        
-        # Boot Display Group
-        display_group = Adw.PreferencesGroup()
-        display_group.set_title(_("🖥️ Boot Display"))
-        display_group.set_description(_("What to show on screen during boot"))
-        
-        self.quiet_switch = Adw.SwitchRow()
-        self.quiet_switch.set_title(_("Quiet Boot (quiet)"))
-        self.quiet_switch.set_subtitle(_("Hide technical messages, clean boot"))
-        self.quiet_switch.add_prefix(create_help_button("quiet", app.win))
-        self.quiet_switch.set_active("quiet" in current_params)
-        self.quiet_switch.connect("notify::active", lambda *a: app.mark_changed())
-        
-        self.splash_switch = Adw.SwitchRow()
-        self.splash_switch.set_title(_("Boot Animation (splash)"))
-        self.splash_switch.set_subtitle(_("Beautiful boot screen with logo"))
-        self.splash_switch.add_prefix(create_help_button("splash", app.win))
-        self.splash_switch.set_active("splash" in current_params)
-        self.splash_switch.connect("notify::active", lambda *a: app.mark_changed())
-        
-        display_group.add(self.quiet_switch)
-        display_group.add(self.splash_switch)
-        content.append(display_group)
-        
-        # Recovery Group
-        recovery_group = Adw.PreferencesGroup()
-        recovery_group.set_title(_("🛠️ Recovery Options"))
-        recovery_group.set_description(_("Troubleshooting and recovery mode"))
-        
-        self.recovery_switch = Adw.SwitchRow()
-        self.recovery_switch.set_title(_("Show Recovery Mode"))
-        self.recovery_switch.set_subtitle(_("Show recovery options in GRUB"))
-        self.recovery_switch.add_prefix(create_help_button("recovery", app.win))
-        
-        current_recovery = app.grub_config.get("GRUB_DISABLE_RECOVERY", "")
-        self.recovery_switch.set_active(current_recovery.lower() != "true")
-        self.recovery_switch.connect("notify::active", lambda *a: app.mark_changed())
-        
-        recovery_group.add(self.recovery_switch)
-        
-        recovery_tip = Adw.ActionRow()
-        recovery_tip.set_title(_("💡 Tip"))
-        recovery_tip.set_subtitle(_("Recovery mode can be a lifesaver if system fails to boot!"))
-        recovery_group.add(recovery_tip)
-        
-        content.append(recovery_group)
-        
-        # Custom Parameters
-        custom_group = Adw.PreferencesGroup()
-        custom_group.set_title(_("⌨️ Custom Kernel Parameters"))
-        custom_group.set_description(_("For advanced users"))
-        
-        self.custom_entry = Adw.EntryRow()
-        self.custom_entry.set_title(_("Kernel Parameters"))
-        
-        # Get custom params (exclude quiet and splash)
-        custom_params = [p for p in current_params.split() if p not in ["quiet", "splash"]]
-        self.custom_entry.set_text(" ".join(custom_params))
-        self.custom_entry.connect("changed", lambda *a: app.mark_changed())
-        
-        custom_group.add(self.custom_entry)
-        
-        custom_info = Adw.ActionRow()
-        custom_info.set_title(_("Example parameters"))
-        
-        # Remember Last Selection
-        remember_group = Adw.PreferencesGroup()
-        remember_group.set_title(_("💾 Remember Last Selection"))
-        remember_group.set_description(_("Default to the last booted system"))
-        
-        self.savedefault_switch = Adw.SwitchRow()
-        self.savedefault_switch.set_title(_("Remember Last Selection"))
-        self.savedefault_switch.set_subtitle(_("The last used OS will be selected on next boot"))
-        self.savedefault_switch.add_prefix(create_help_button("savedefault", app.win))
-        
-        current_default = app.grub_config.get("GRUB_DEFAULT", "0")
-        self.savedefault_switch.set_active(current_default == "saved")
-        self.savedefault_switch.connect("notify::active", lambda *a: app.mark_changed())
-        
-        remember_group.add(self.savedefault_switch)
-        content.append(remember_group)
-        
-        scrolled.set_child(content)
-        self.append(scrolled)
-    
-    def update_timeout_label(self, value):
-        if value == 0:
-            self.timeout_label.set_label("Kapalı")
-        else:
-            self.timeout_label.set_label(f"{int(value)} saniye")
-    
-    def on_timeout_changed(self, scale):
-        value = int(scale.get_value())
-        self.update_timeout_label(value)
-        self.app.mark_changed()
-    
-    def get_values(self):
-        style = "menu"
-        if self.style_hidden.get_active():
-            style = "hidden"
-        elif self.style_countdown.get_active():
-            style = "countdown"
-        
-        values = {
-            "GRUB_TIMEOUT": str(int(self.timeout_scale.get_value())),
-            "GRUB_TIMEOUT_STYLE": style
-        }
-        
-        if self.savedefault_switch.get_active():
-            values["GRUB_DEFAULT"] = "saved"
-            values["GRUB_SAVEDEFAULT"] = "true"
         
         return values
 
@@ -1798,6 +1644,23 @@ class AdvancedPage(Gtk.Box):
         custom_group.add(custom_info)
         
         content.append(custom_group)
+
+        # Remember Last Selection
+        remember_group = Adw.PreferencesGroup()
+        remember_group.set_title(_("💾 Remember Last Selection"))
+        remember_group.set_description(_("Default to the last booted system"))
+
+        self.savedefault_switch = Adw.SwitchRow()
+        self.savedefault_switch.set_title(_("Remember Last Selection"))
+        self.savedefault_switch.set_subtitle(_("The last used OS will be selected on next boot"))
+        self.savedefault_switch.add_prefix(create_help_button("savedefault", app.win))
+
+        current_default = app.grub_config.get("GRUB_DEFAULT", "0")
+        self.savedefault_switch.set_active(current_default == "saved")
+        self.savedefault_switch.connect("notify::active", lambda *a: app.mark_changed())
+
+        remember_group.add(self.savedefault_switch)
+        content.append(remember_group)
         
         scrolled.set_child(content)
         self.append(scrolled)
@@ -1820,6 +1683,12 @@ class AdvancedPage(Gtk.Box):
         
         if not self.recovery_switch.get_active():
             values["GRUB_DISABLE_RECOVERY"] = "true"
+
+        if self.savedefault_switch.get_active():
+            values["GRUB_DEFAULT"] = "saved"
+            values["GRUB_SAVEDEFAULT"] = "true"
+        else:
+            values["GRUB_SAVEDEFAULT"] = "false"
         
         return values
 
@@ -1993,7 +1862,6 @@ class GrubSettingsApp(Adw.Application):
         kwargs.setdefault('application_id', 'io.github.taylan.grubsettings')
         super().__init__(**kwargs)
         self.grub_config = GrubConfig()
-        self.grub_config.load()
         
         self.cached_password = None  # Sudo şifresi için önbellek
         self.password_timeout_id = None
@@ -2464,7 +2332,7 @@ Built with GTK4 and Libadwaita for a native Linux experience."""),
         logger.debug(f"advanced_values: {advanced_values}")
         
         # Handle save default setting
-        if timing_values.get("GRUB_DEFAULT") == "saved":
+        if advanced_values.get("GRUB_DEFAULT") == "saved":
             all_values["GRUB_DEFAULT"] = "saved"
             all_values["GRUB_SAVEDEFAULT"] = "true"
             # system_values'dan GRUB_DEFAULT hariç diğerlerini ekle (OS_PROBER vb.)
@@ -2650,22 +2518,19 @@ Built with GTK4 and Libadwaita for a native Linux experience."""),
                     except BrokenPipeError:
                         pass
                 
-                def read_output():
-                    try:
-                        line = process.stdout.readline()
-                        if line:
-                            GLib.idle_add(self.append_terminal_line, line)
-                            return True
-                        else:
-                            # Process finished
-                            process.wait()
-                            GLib.idle_add(self.on_command_finished, process.returncode)
-                            return False
-                    except Exception as e:
-                        logger.debug(f"Çıktı okuma tamamlandı veya hata: {e}")
+                def on_output(source, condition):
+                    if condition & GLib.IO_HUP:
+                        process.wait()
+                        GLib.idle_add(self.on_command_finished, process.returncode)
                         return False
-                
-                GLib.timeout_add(50, read_output)
+
+                    line = source.readline()
+                    if line:
+                        GLib.idle_add(self.append_terminal_line, line)
+                    return True
+
+                # Use io_add_watch for non-blocking I/O
+                GLib.io_add_watch(process.stdout, GLib.IO_IN | GLib.IO_HUP, on_output)
                 
             except Exception as e:
                 GLib.idle_add(self.append_terminal_line, f"\n❌ Hata: {str(e)}\n")
@@ -2822,21 +2687,19 @@ Built with GTK4 and Libadwaita for a native Linux experience."""),
                     except BrokenPipeError:
                         pass
                 
-                def read_output():
-                    try:
-                        line = process.stdout.readline()
-                        if line:
-                            GLib.idle_add(self.append_terminal_line, line)
-                            return True
-                        else:
-                            process.wait()
-                            GLib.idle_add(self.on_custom_command_finished, process.returncode)
-                            return False
-                    except Exception as e:
-                        logger.debug(f"Çıktı okuma tamamlandı veya hata: {e}")
+                def on_output(source, condition):
+                    if condition & GLib.IO_HUP:
+                        process.wait()
+                        GLib.idle_add(self.on_custom_command_finished, process.returncode)
                         return False
+
+                    line = source.readline()
+                    if line:
+                        GLib.idle_add(self.append_terminal_line, line)
+                    return True
                 
-                GLib.timeout_add(50, read_output)
+                # Use io_add_watch for non-blocking I/O
+                GLib.io_add_watch(process.stdout, GLib.IO_IN | GLib.IO_HUP, on_output)
             except Exception as e:
                 GLib.idle_add(self.append_terminal_line, f"\n❌ Hata: {str(e)}\n")
                 GLib.idle_add(self.on_custom_command_finished, 1)
@@ -2875,35 +2738,10 @@ Built with GTK4 and Libadwaita for a native Linux experience."""),
             self.custom_callback(success)
 
 
+# Ensure the current directory is in the python path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-def global_exception_handler(exctype, value, traceback_obj):
-    import traceback
-    import os
-    from datetime import datetime
-    
-    from datetime import datetime
-    
-    # Use XDG Cache location
-    crash_dir = os.path.expanduser("~/.cache/grub-settings")
-    os.makedirs(crash_dir, exist_ok=True)
-    crash_file = os.path.join(crash_dir, "crash.log")
-    
-    with open(crash_file, "w") as f:
-        f.write(f"Crash Time: {datetime.now()}\n")
-        traceback.print_exception(exctype, value, traceback_obj, file=f)
-    print(f"CRITICAL ERROR (Uncaught): {value}")
-    try:
-        logging.critical(f"Uncaught exception: {value}", exc_info=(exctype, value, traceback_obj))
-    except:
-        pass
+from grub_settings_pkg.main import main
 
 if __name__ == "__main__":
-    sys.excepthook = global_exception_handler
-    
-    try:
-        app = GrubSettingsApp(application_id="io.github.taylan.grubsettings")
-        app.run(sys.argv)
-    except Exception as e:
-        # This catches startup errors before the main loop takes over fully,
-        # or if run() raises.
-        global_exception_handler(type(e), e, e.__traceback__)
+    main()

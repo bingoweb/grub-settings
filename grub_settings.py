@@ -94,6 +94,8 @@ class ConfigManager:
         return self.config.get(key, default)
 
     def set(self, key, value):
+        if self.config.get(key) == value:
+            return
         self.config[key] = value
         self.save_config()
 
@@ -2008,7 +2010,6 @@ class GrubSettingsApp(Adw.Application):
         kwargs.setdefault('application_id', 'io.github.taylan.grubsettings')
         super().__init__(**kwargs)
         self.grub_config = GrubConfig()
-        self.grub_config.load()
         
         self.cached_password = None  # Sudo şifresi için önbellek
         self.password_timeout_id = None

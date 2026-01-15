@@ -2665,22 +2665,19 @@ Built with GTK4 and Libadwaita for a native Linux experience."""),
                     except BrokenPipeError:
                         pass
                 
-                def read_output():
-                    try:
-                        line = process.stdout.readline()
-                        if line:
-                            GLib.idle_add(self.append_terminal_line, line)
-                            return True
-                        else:
-                            # Process finished
-                            process.wait()
-                            GLib.idle_add(self.on_command_finished, process.returncode)
-                            return False
-                    except Exception as e:
-                        logger.debug(f"Çıktı okuma tamamlandı veya hata: {e}")
+                def on_output(source, condition):
+                    if condition & GLib.IO_HUP:
+                        process.wait()
+                        GLib.idle_add(self.on_command_finished, process.returncode)
                         return False
-                
-                GLib.timeout_add(50, read_output)
+
+                    line = source.readline()
+                    if line:
+                        GLib.idle_add(self.append_terminal_line, line)
+                    return True
+
+                # Use io_add_watch for non-blocking I/O
+                GLib.io_add_watch(process.stdout, GLib.IO_IN | GLib.IO_HUP, on_output)
                 
             except Exception as e:
                 GLib.idle_add(self.append_terminal_line, f"\n❌ Hata: {str(e)}\n")
@@ -2837,21 +2834,19 @@ Built with GTK4 and Libadwaita for a native Linux experience."""),
                     except BrokenPipeError:
                         pass
                 
-                def read_output():
-                    try:
-                        line = process.stdout.readline()
-                        if line:
-                            GLib.idle_add(self.append_terminal_line, line)
-                            return True
-                        else:
-                            process.wait()
-                            GLib.idle_add(self.on_custom_command_finished, process.returncode)
-                            return False
-                    except Exception as e:
-                        logger.debug(f"Çıktı okuma tamamlandı veya hata: {e}")
+                def on_output(source, condition):
+                    if condition & GLib.IO_HUP:
+                        process.wait()
+                        GLib.idle_add(self.on_custom_command_finished, process.returncode)
                         return False
+
+                    line = source.readline()
+                    if line:
+                        GLib.idle_add(self.append_terminal_line, line)
+                    return True
                 
-                GLib.timeout_add(50, read_output)
+                # Use io_add_watch for non-blocking I/O
+                GLib.io_add_watch(process.stdout, GLib.IO_IN | GLib.IO_HUP, on_output)
             except Exception as e:
                 GLib.idle_add(self.append_terminal_line, f"\n❌ Hata: {str(e)}\n")
                 GLib.idle_add(self.on_custom_command_finished, 1)

@@ -156,6 +156,7 @@ class PoliteAuthDialog(Adw.MessageDialog):
         self.password_entry = Gtk.PasswordEntry()
         self.password_entry.set_placeholder_text(_("Sudo password"))
         self.password_entry.set_activates_default(True)
+        self.password_entry.set_show_peek_icon(True)
         self.password_entry.set_margin_top(12)
         self.password_entry.set_margin_bottom(12)
 
@@ -169,6 +170,7 @@ class PoliteAuthDialog(Adw.MessageDialog):
         pass_box.append(self.password_entry)
 
         self.set_extra_child(pass_box)
+        self.set_focus(self.password_entry)
 
     def get_password(self):
         return self.password_entry.get_text()

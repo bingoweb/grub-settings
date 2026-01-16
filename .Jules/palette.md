@@ -7,3 +7,7 @@
 ## 2024-05-22 - Modal Dialog Keyboard Shortcuts
 **Learning:** Custom `Gtk.Window` used as dialog does not handle `Escape` key to close by default.
 **Action:** Add `Gtk.EventControllerKey` to handle `Escape` key for custom dialogs to match platform expectations.
+
+## 2026-01-16 - Password Visibility
+**Learning:** `Gtk.PasswordEntry` defaults to hidden peek icon, reducing usability and accessibility.
+**Action:** Always enable `show-peek-icon` for password fields to allow user verification.

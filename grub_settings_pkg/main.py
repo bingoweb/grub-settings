@@ -18,8 +18,8 @@ def global_exception_handler(exctype, value, traceback_obj):
         traceback.print_exception(exctype, value, traceback_obj, file=f)
     print(f"CRITICAL ERROR (Uncaught): {value}")
     try:
-        logging.critical(f"Uncaught exception: {value}", exc_info=(exctype, value, traceback_obj))
-    except:
+        logger.critical(f"Uncaught exception: {value}", exc_info=(exctype, value, traceback_obj))
+    except Exception:
         pass
 
 def main():

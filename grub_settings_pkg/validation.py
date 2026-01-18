@@ -88,11 +88,11 @@ SHELL_INJECTION_PATTERNS = [
 ]
 
 
-def validate_grub_key(key: str) -> Tuple[bool, Optional[str]]:
+def validate_grub_key(key: Any) -> Tuple[bool, Optional[str]]:
     """Validate GRUB configuration key.
 
     Args:
-        key: GRUB configuration key to validate
+        key: GRUB configuration key to validate (can be any type for validation)
 
     Returns:
         Tuple of (is_valid, error_message)

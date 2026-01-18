@@ -209,6 +209,10 @@ class GrubSettingsApp(Adw.Application):
         self.win.present()
 
     def load_css(self):
+        if self.win is None:
+            logger.error("Window not initialized, cannot load CSS")
+            return
+
         css_provider = Gtk.CssProvider()
 
         # Try to load from assets/style.css
@@ -451,7 +455,7 @@ class GrubSettingsApp(Adw.Application):
                     bufsize=1
                 )
 
-                if self.cached_password:
+                if self.cached_password and process.stdin:
                     try:
                         process.stdin.write(self.cached_password + "\n")
                         process.stdin.flush()
@@ -459,6 +463,8 @@ class GrubSettingsApp(Adw.Application):
                         pass
 
                 def read_output():
+                    if not process.stdout:
+                        return
                     try:
                         line = process.stdout.readline()
                         if line:
@@ -527,7 +533,7 @@ class GrubSettingsApp(Adw.Application):
         def run_command():
             try:
                 process = subprocess.Popen(full_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
-                if self.cached_password:
+                if self.cached_password and process.stdin:
                     try:
                         process.stdin.write(self.cached_password + "\n")
                         process.stdin.flush()
@@ -536,6 +542,8 @@ class GrubSettingsApp(Adw.Application):
                         GLib.idle_add(self.append_terminal_line, _("❌ Failed to send password to command.\n"))
 
                 def read_output():
+                    if not process.stdout:
+                        return
                     try:
                         line = process.stdout.readline()
                         if line:

@@ -27,7 +27,7 @@ def get_path(relative_path: str) -> str:
         str: Absolute path to the resource
     """
     try:
-        base_path: str = sys._MEIPASS  # type: ignore
+        base_path: str = sys._MEIPASS  # type: ignore  # pylint: disable=no-member
     except Exception:
         base_path = os.path.abspath(".")
 
@@ -88,7 +88,7 @@ def setup_i18n(config_manager: Any) -> None:
         if saved_lang:
             # Load user preference
             lang_code: str = "tr" if "tr" in saved_lang else "en"
-            t = gettext.translation('grub-settings', localedir=locales_dir, languages=[lang_code])
+            t: gettext.NullTranslations = gettext.translation('grub-settings', localedir=locales_dir, languages=[lang_code])
         else:
             # Auto-detect
             t = gettext.translation('grub-settings', localedir=locales_dir, fallback=True)

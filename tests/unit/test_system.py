@@ -97,7 +97,7 @@ class TestGrubPaths:
                 info = paths._parse_os_release()
 
         assert info == {}
-        assert "OS release read failed" in caplog.text
+        assert "OS release file I/O error" in caplog.text
 
     def test_detect_grub_cfg_debian_style(self, mocker):
         """Test detecting Debian/Ubuntu style grub.cfg path."""

@@ -44,7 +44,7 @@ class TestConfigManager:
         mocker.patch.object(Path, 'home', return_value=tmp_path)
         cm = ConfigManager()
         assert cm.config == {}
-        assert "Config load failed" in caplog.text
+        assert "Config JSON decode failed" in caplog.text
 
     def test_save_config_creates_directory(self, tmp_path, mocker):
         """Test that save_config creates directory if it doesn't exist."""

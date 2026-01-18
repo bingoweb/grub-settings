@@ -2,51 +2,121 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import Any, Dict, Optional
 from .system import GRUB_FILE
 from .utils import logger
 
-class ConfigManager:
-    """Manages application settings (user preferences)."""
-    def __init__(self):
-        self.config_dir = Path.home() / ".config" / "grub-settings"
-        self.config_file = self.config_dir / "settings.json"
-        self.config = self._load_config()
 
-    def _load_config(self):
+class ConfigManager:
+    """Manages application settings (user preferences).
+
+    This class handles loading, saving, and managing user configuration
+    stored in ~/.config/grub-settings/settings.json
+
+    Attributes:
+        config_dir (Path): Directory containing configuration files
+        config_file (Path): Path to the settings.json file
+        config (Dict[str, Any]): In-memory configuration dictionary
+    """
+
+    def __init__(self) -> None:
+        """Initialize ConfigManager with default paths and load existing config."""
+        self.config_dir: Path = Path.home() / ".config" / "grub-settings"
+        self.config_file: Path = self.config_dir / "settings.json"
+        self.config: Dict[str, Any] = self._load_config()
+
+    def _load_config(self) -> Dict[str, Any]:
+        """Load configuration from JSON file.
+
+        Returns:
+            Dict[str, Any]: Configuration dictionary or empty dict on error
+        """
         if not self.config_file.exists():
             return {}
         try:
-            with open(self.config_file, 'r') as f:
-                return json.load(f)
-        except Exception as e:
-            logger.warning(f"Config load failed: {e}")
+            with open(self.config_file, 'r', encoding='utf-8') as f:
+                loaded_config = json.load(f)
+                if not isinstance(loaded_config, dict):
+                    logger.warning("Invalid config format, expected dict")
+                    return {}
+                return loaded_config
+        except json.JSONDecodeError as e:
+            logger.warning(f"Config JSON decode failed: {e}")
+            return {}
+        except (OSError, IOError) as e:
+            logger.warning(f"Config file I/O error: {e}")
             return {}
 
-    def save_config(self):
-        self.config_dir.mkdir(parents=True, exist_ok=True)
-        try:
-            with open(self.config_file, 'w') as f:
-                json.dump(self.config, f, indent=4)
-        except Exception as e:
-            logger.error(f"Config save failed: {e}")
+    def save_config(self) -> bool:
+        """Save current configuration to JSON file.
 
-    def get(self, key, default=None):
+        Returns:
+            bool: True if save successful, False otherwise
+        """
+        try:
+            self.config_dir.mkdir(parents=True, exist_ok=True)
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(self.config, f, indent=4, ensure_ascii=False)
+            return True
+        except (OSError, IOError) as e:
+            logger.error(f"Config save I/O error: {e}")
+            return False
+        except TypeError as e:
+            logger.error(f"Config contains non-serializable data: {e}")
+            return False
+
+    def get(self, key: str, default: Optional[Any] = None) -> Any:
+        """Get configuration value by key.
+
+        Args:
+            key: Configuration key to retrieve
+            default: Default value if key not found
+
+        Returns:
+            Configuration value or default
+        """
         return self.config.get(key, default)
 
-    def set(self, key, value):
+    def set(self, key: str, value: Any) -> bool:
+        """Set configuration value and save to disk.
+
+        Args:
+            key: Configuration key to set
+            value: Value to store (must be JSON-serializable)
+
+        Returns:
+            bool: True if save successful, False otherwise
+        """
         self.config[key] = value
-        self.save_config()
+        return self.save_config()
 
 class GrubConfig:
-    """Reads and writes the /etc/default/grub file."""
+    """Reads and writes the /etc/default/grub file.
 
-    def __init__(self):
-        self.config = {}
-        self.raw_content = ""
+    This class manages GRUB bootloader configuration by parsing,
+    modifying, and regenerating the /etc/default/grub file while
+    preserving comments and formatting.
+
+    Attributes:
+        config (Dict[str, str]): Parsed GRUB configuration key-value pairs
+        raw_content (str): Original file content for preserving structure
+    """
+
+    def __init__(self) -> None:
+        """Initialize GrubConfig and load current GRUB configuration."""
+        self.config: Dict[str, str] = {}
+        self.raw_content: str = ""
         self.load()
 
-    def load(self):
-        """Read GRUB settings."""
+    def load(self) -> bool:
+        """Read and parse GRUB settings from /etc/default/grub.
+
+        Returns:
+            bool: True if successfully loaded, False on error
+
+        Raises:
+            No exceptions are raised; errors are logged instead
+        """
         try:
             if not os.path.exists(GRUB_FILE):
                 logger.error(f"GRUB file not found: {GRUB_FILE}")
@@ -69,26 +139,60 @@ class GrubConfig:
         except PermissionError:
             logger.error("No permission to read GRUB file")
             return False
+        except (OSError, IOError) as e:
+            logger.error(f"Failed to read GRUB file (I/O error): {e}")
+            return False
         except Exception as e:
-            logger.error(f"Failed to read GRUB file: {e}")
+            logger.error(f"Failed to read GRUB file (unexpected error): {e}")
             return False
 
-    def get(self, key, default=""):
+    def get(self, key: str, default: str = "") -> str:
+        """Get GRUB configuration value by key.
+
+        Args:
+            key: Configuration key (e.g., 'GRUB_TIMEOUT')
+            default: Default value if key not found
+
+        Returns:
+            str: Configuration value or default
+        """
         return self.config.get(key, default)
 
-    def set(self, key, value):
+    def set(self, key: str, value: Any) -> None:
+        """Set GRUB configuration value.
+
+        Args:
+            key: Configuration key (e.g., 'GRUB_TIMEOUT')
+            value: Value to set (will be converted to string)
+        """
         self.config[key] = str(value)
         logger.debug(f"Setting changed: {key} = {value}")
 
-    def remove(self, key):
+    def remove(self, key: str) -> None:
+        """Remove configuration key from GRUB settings.
+
+        Args:
+            key: Configuration key to remove
+        """
         if key in self.config:
             del self.config[key]
             logger.debug(f"Setting removed: {key}")
 
-    def generate_config(self):
-        """Regenerate config content preserving comments and structure."""
+    def generate_config(self) -> str:
+        """Regenerate config content preserving comments and structure.
+
+        This method rebuilds the GRUB configuration file content while:
+        - Preserving all comment lines
+        - Maintaining original file structure
+        - Uncommenting keys that are being set
+        - Adding quotes to values with spaces or special characters
+        - Appending new keys at the end
+
+        Returns:
+            str: Complete GRUB configuration file content
+        """
         lines = []
-        processed_keys = set()
+        processed_keys: set = set()
 
         for line in self.raw_content.splitlines():
             stripped = line.strip()

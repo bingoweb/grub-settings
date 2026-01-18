@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 from .system import GRUB_FILE
 from .utils import logger
+from . import validation
 
 
 class ConfigManager:
@@ -158,15 +159,71 @@ class GrubConfig:
         """
         return self.config.get(key, default)
 
-    def set(self, key: str, value: Any) -> None:
-        """Set GRUB configuration value.
+    def set(self, key: str, value: Any, skip_validation: bool = False) -> bool:
+        """Set GRUB configuration value with validation.
 
         Args:
             key: Configuration key (e.g., 'GRUB_TIMEOUT')
             value: Value to set (will be converted to string)
+            skip_validation: Skip validation (use with caution)
+
+        Returns:
+            bool: True if value was set, False if validation failed
+
+        Raises:
+            ValueError: If validation fails and skip_validation is False
         """
-        self.config[key] = str(value)
-        logger.debug(f"Setting changed: {key} = {value}")
+        if not skip_validation:
+            # Validate key
+            is_valid, error = validation.validate_grub_key(key)
+            if not is_valid:
+                error_msg = f"Invalid GRUB key '{key}': {error}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            # Apply specific validation based on key type
+            if key == 'GRUB_TIMEOUT':
+                is_valid, error = validation.validate_timeout(value)
+                if not is_valid:
+                    error_msg = f"Invalid timeout value: {error}"
+                    logger.error(error_msg)
+                    raise ValueError(error_msg)
+
+            elif key == 'GRUB_GFXMODE':
+                is_valid, error = validation.validate_gfxmode(str(value))
+                if not is_valid:
+                    error_msg = f"Invalid graphics mode: {error}"
+                    logger.error(error_msg)
+                    raise ValueError(error_msg)
+
+            elif key == 'GRUB_BACKGROUND':
+                if value:  # Only validate if not empty
+                    is_valid, error = validation.validate_file_path(str(value), must_exist=False)
+                    if not is_valid:
+                        logger.warning(f"Background path validation: {error}")
+
+            elif key in ['GRUB_DISABLE_OS_PROBER', 'GRUB_DISABLE_RECOVERY',
+                         'GRUB_DISABLE_SUBMENU', 'GRUB_SAVEDEFAULT']:
+                is_valid, error = validation.validate_boolean(value)
+                if not is_valid:
+                    logger.warning(f"Boolean validation: {error}")
+
+            elif key in ['GRUB_CMDLINE_LINUX', 'GRUB_CMDLINE_LINUX_DEFAULT']:
+                # Sanitize kernel command line
+                sanitized, had_changes = validation.sanitize_cmdline(str(value))
+                if had_changes:
+                    logger.warning(f"Kernel cmdline was sanitized: {value} -> {sanitized}")
+                    value = sanitized
+
+        # Sanitize value
+        sanitized_value = validation.sanitize_grub_value(
+            value,
+            allow_shell=(key == 'GRUB_DISTRIBUTOR')  # Allow shell constructs for distributor
+        )
+
+        self.config[key] = sanitized_value
+        logger.debug(f"Setting changed: {key} = {sanitized_value}")
+        return True
 
     def remove(self, key: str) -> None:
         """Remove configuration key from GRUB settings.

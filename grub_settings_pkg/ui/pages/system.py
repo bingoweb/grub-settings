@@ -87,12 +87,12 @@ class SystemPage(Gtk.Box):
         self.default_combo.set_subtitle(_("Click refresh to load the menu"))
         self.default_combo.add_prefix(create_help_button("default_os", app.win))
 
-        refresh_btn = Gtk.Button()
-        refresh_btn.set_icon_name("view-refresh-symbolic")
-        refresh_btn.set_valign(Gtk.Align.CENTER)
-        refresh_btn.set_tooltip_text(_("Load GRUB menu (requires root privileges)"))
-        refresh_btn.connect("clicked", self.on_refresh_menu)
-        self.default_combo.add_suffix(refresh_btn)
+        self.refresh_btn = Gtk.Button()
+        self.refresh_btn.set_icon_name("view-refresh-symbolic")
+        self.refresh_btn.set_valign(Gtk.Align.CENTER)
+        self.refresh_btn.set_tooltip_text(_("Load GRUB menu (requires root privileges)"))
+        self.refresh_btn.connect("clicked", self.on_refresh_menu)
+        self.default_combo.add_suffix(self.refresh_btn)
 
         menu_model = Gtk.StringList.new(self.menu_entries)
         self.default_combo.set_model(menu_model)
@@ -347,7 +347,34 @@ menuentry "Windows Boot Manager" --class windows --class os {{
         self.app.show_terminal_dialog_custom(cmd, _("Removing Windows"), on_done)
 
     def on_refresh_menu(self, button):
-        entries = self.get_grub_menu_entries()
+        # UX: Add loading state to button
+        self.refresh_btn.set_sensitive(False)
+
+        # Add spinner
+        spinner = Gtk.Spinner()
+        spinner.start()
+        self.refresh_btn.set_child(spinner)
+
+        # Run in background
+        thread = threading.Thread(target=self._refresh_menu_worker)
+        thread.daemon = True
+        thread.start()
+
+    def _refresh_menu_worker(self):
+        entries = []
+        try:
+            entries = self.get_grub_menu_entries()
+        except Exception as e:
+            logger.error(f"Critical error in refresh worker: {e}")
+        finally:
+            GLib.idle_add(self._on_refresh_menu_complete, entries)
+
+    def _on_refresh_menu_complete(self, entries):
+        # Restore button state
+        self.refresh_btn.set_child(None)
+        self.refresh_btn.set_icon_name("view-refresh-symbolic")
+        self.refresh_btn.set_sensitive(True)
+
         if entries and entries[0] != "0 - First Option":
             self.menu_entries = entries
             menu_model = Gtk.StringList.new(self.menu_entries)
@@ -361,6 +388,8 @@ menuentry "Windows Boot Manager" --class windows --class os {{
                         self.default_combo.set_selected(default_index)
             except (ValueError, TypeError):
                 pass
+
+        return False
 
     def get_grub_menu_entries(self):
         import re

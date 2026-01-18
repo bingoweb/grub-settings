@@ -1,10 +1,11 @@
-import os
-import sys
-import logging
-import shutil
 import gettext
+import logging
+import os
+import shutil
+import sys
 from pathlib import Path
 from typing import Any, List, Optional
+
 from .constants import APP_NAME
 
 # Check if running in Flatpak
@@ -63,11 +64,8 @@ def setup_logging() -> logging.Logger:
 
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(levelname)s: %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
+        format="%(asctime)s - %(levelname)s: %(message)s",
+        handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
     )
     return logging.getLogger(APP_NAME)
 
@@ -88,15 +86,18 @@ def setup_i18n(config_manager: Any) -> None:
         if saved_lang:
             # Load user preference
             lang_code: str = "tr" if "tr" in saved_lang else "en"
-            t: gettext.NullTranslations = gettext.translation('grub-settings', localedir=locales_dir, languages=[lang_code])
+            t: gettext.NullTranslations = gettext.translation(
+                "grub-settings", localedir=locales_dir, languages=[lang_code]
+            )
         else:
             # Auto-detect
-            t = gettext.translation('grub-settings', localedir=locales_dir, fallback=True)
+            t = gettext.translation("grub-settings", localedir=locales_dir, fallback=True)
 
         t.install()  # Installs _() function globally
     except Exception as e:
         logger.warning(f"i18n setup failed: {e}")
         import builtins
+
         builtins._ = lambda x: x  # type: ignore
 
 
@@ -126,9 +127,10 @@ def restart_app(app: Any) -> None:
     try:
         app.quit()
         import time
+
         time.sleep(0.5)
 
-        if getattr(sys, 'frozen', False):
+        if getattr(sys, "frozen", False):
             os.execl(sys.executable, sys.executable, *sys.argv[1:])
         else:
             python: str = sys.executable

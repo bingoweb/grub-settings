@@ -1,6 +1,9 @@
 """Integration tests for config roundtrip operations."""
-import pytest
+
 from pathlib import Path
+
+import pytest
+
 from grub_settings_pkg.config import GrubConfig
 
 
@@ -12,7 +15,7 @@ class TestConfigRoundtrip:
         """Test full roundtrip with Ubuntu config."""
         grub_file = tmp_path / "grub"
         grub_file.write_text(ubuntu_grub_config)
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         # Load config
         gc = GrubConfig()
@@ -31,8 +34,8 @@ class TestConfigRoundtrip:
         gc2.config.clear()
         for line in gc2.raw_content.splitlines():
             line = line.strip()
-            if line and not line.startswith('#') and '=' in line:
-                key, value = line.split('=', 1)
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
                 gc2.config[key.strip()] = value.strip().strip('"').strip("'")
 
         # Verify changes persisted
@@ -46,7 +49,7 @@ class TestConfigRoundtrip:
         """Test full roundtrip with Fedora config."""
         grub_file = tmp_path / "grub"
         grub_file.write_text(fedora_grub_config)
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         # Load config
         gc = GrubConfig()
@@ -60,13 +63,16 @@ class TestConfigRoundtrip:
 
         # Verify structure preserved
         assert "GRUB_TIMEOUT=3" in new_config
-        assert 'GRUB_DISABLE_RECOVERY=false' in new_config or 'GRUB_DISABLE_RECOVERY="false"' in new_config
+        assert (
+            "GRUB_DISABLE_RECOVERY=false" in new_config
+            or 'GRUB_DISABLE_RECOVERY="false"' in new_config
+        )
 
     def test_roundtrip_preserves_comments(self, commented_options_config, tmp_path, mocker):
         """Test that comments are preserved during roundtrip."""
         grub_file = tmp_path / "grub"
         grub_file.write_text(commented_options_config)
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         # Load config
         gc = GrubConfig()
@@ -85,7 +91,7 @@ class TestConfigRoundtrip:
         """Test roundtrip with special characters."""
         grub_file = tmp_path / "grub"
         grub_file.write_text(special_chars_config)
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         # Load config
         gc = GrubConfig()
@@ -104,7 +110,7 @@ class TestConfigRoundtrip:
         """Test adding new options to existing config."""
         grub_file = tmp_path / "grub"
         grub_file.write_text(minimal_grub_config)
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         # Load minimal config
         gc = GrubConfig()
@@ -130,7 +136,7 @@ class TestConfigRoundtrip:
         """Test removing options from config."""
         grub_file = tmp_path / "grub"
         grub_file.write_text(ubuntu_grub_config)
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         # Load config
         gc = GrubConfig()
@@ -143,15 +149,16 @@ class TestConfigRoundtrip:
 
         # Verify option removed from active config
         assert "GRUB_TIMEOUT_STYLE=" not in [
-            line for line in new_config.splitlines()
-            if line.strip() and not line.strip().startswith('#')
+            line
+            for line in new_config.splitlines()
+            if line.strip() and not line.strip().startswith("#")
         ]
 
     def test_multiple_modifications_persist(self, ubuntu_grub_config, tmp_path, mocker):
         """Test that multiple sequential modifications all persist."""
         grub_file = tmp_path / "grub"
         grub_file.write_text(ubuntu_grub_config)
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         # Load config
         gc = GrubConfig()

@@ -1,23 +1,21 @@
 #!/usr/bin/env python3
-import os
-import re
-import sys
-import subprocess
 import argparse
 import datetime
+import os
+import re
+import subprocess
+import sys
 
 # Configuration
 FILES_TO_UPDATE = {
     "grub_settings.py": r'APP_VERSION = "({version})"',
     "grub_settings_pkg/constants.py": r'APP_VERSION = "({version})"',
-    "packaging/deb/DEBIAN/control": r'Version: ({version})',
-    "README.md": [
-        r'version-({version})',
-        r'grub-settings_({version})_all.deb'
-    ]
+    "packaging/deb/DEBIAN/control": r"Version: ({version})",
+    "README.md": [r"version-({version})", r"grub-settings_({version})_all.deb"],
 }
 
 FLATPAK_META = "flatpak/io.github.taylan.grubsettings.metainfo.xml"
+
 
 def run_command(cmd, shell=True):
     try:
@@ -28,6 +26,7 @@ def run_command(cmd, shell=True):
         print(e.stderr)
         sys.exit(1)
 
+
 def get_current_version():
     with open("grub_settings.py", "r") as f:
         content = f.read()
@@ -37,9 +36,10 @@ def get_current_version():
     print("Error: Could not detect current version from grub_settings.py")
     sys.exit(1)
 
+
 def bump_version(current_version, part):
     # Handle versions like "0.1.1.1" or "0.1.0"
-    parts = list(map(int, current_version.split('.')))
+    parts = list(map(int, current_version.split(".")))
 
     # Ensure at least 3 parts (major.minor.patch)
     while len(parts) < 3:
@@ -49,7 +49,7 @@ def bump_version(current_version, part):
         parts[0] += 1
         parts[1] = 0
         parts[2] = 0
-        parts = parts[:3] # Reset potential 4th part
+        parts = parts[:3]  # Reset potential 4th part
     elif part == "minor":
         parts[1] += 1
         parts[2] = 0
@@ -59,6 +59,7 @@ def bump_version(current_version, part):
         parts = parts[:3]
 
     return ".".join(map(str, parts))
+
 
 def get_git_changes():
     try:
@@ -78,6 +79,7 @@ def get_git_changes():
     except Exception as e:
         print(f"Warning determining changes: {e}")
         return "- Changes detection failed."
+
 
 def update_file_content(filepath, current_ver, new_ver, patterns):
     if not os.path.exists(filepath):
@@ -103,11 +105,15 @@ def update_file_content(filepath, current_ver, new_ver, patterns):
     # Special handling for README badge which might be 0.1.0--beta vs 0.1.1.1
     # If explicit replace failed because versions didn't match (sync issue), force regex on Version Badge
     if filepath == "README.md":
-         new_content = re.sub(r'version-[\d\.]+(-beta)?-', f'version-{new_ver}-', new_content)
-         new_content = re.sub(r'grub-settings_[\d\.]+_all.deb', f'grub-settings_{new_ver}_all.deb', new_content)
+        new_content = re.sub(r"version-[\d\.]+(-beta)?-", f"version-{new_ver}-", new_content)
+        new_content = re.sub(
+            r"grub-settings_[\d\.]+_all.deb", f"grub-settings_{new_ver}_all.deb", new_content
+        )
 
     if filepath == "packaging/deb/DEBIAN/control":
-        new_content = re.sub(r'^Version:\s*[\w\.\-]+', f'Version: {new_ver}', new_content, flags=re.MULTILINE)
+        new_content = re.sub(
+            r"^Version:\s*[\w\.\-]+", f"Version: {new_ver}", new_content, flags=re.MULTILINE
+        )
 
     if content != new_content:
         with open(filepath, "w") as f:
@@ -115,6 +121,7 @@ def update_file_content(filepath, current_ver, new_ver, patterns):
         print(f"Updated {filepath}")
     else:
         print(f"No changes made to {filepath} (Version string {current_ver} not found?)")
+
 
 def update_flatpak_meta(new_ver):
     filepath = FLATPAK_META
@@ -131,13 +138,14 @@ def update_flatpak_meta(new_ver):
     inserted = False
     for line in lines:
         new_lines.append(line)
-        if '<releases>' in line and not inserted:
+        if "<releases>" in line and not inserted:
             new_lines.append(new_release_tag)
             inserted = True
 
     with open(filepath, "w") as f:
         f.writelines(new_lines)
     print(f"Updated {filepath}")
+
 
 def update_readme_changelog(new_ver, changes):
     filepath = "README.md"
@@ -164,6 +172,7 @@ def update_readme_changelog(new_ver, changes):
     with open(filepath, "w") as f:
         f.write(content)
     print(f"Updated Changelog in {filepath}")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Automate GRUB Settings Release")
@@ -196,11 +205,12 @@ def main():
     print("\n📦 Git Operations...")
     run_command("git add .")
     run_command(f'git commit -m "chore: release v{new_ver}"')
-    run_command(f'git tag v{new_ver}')
+    run_command(f"git tag v{new_ver}")
 
     print(f"\n✅ Release v{new_ver} created successfully!")
     print("👉 Run the following command to publish:")
     print("git push && git push --tags")
+
 
 if __name__ == "__main__":
     main()

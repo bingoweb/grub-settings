@@ -1,7 +1,9 @@
 """Shared pytest fixtures for all tests."""
+
 import os
-import pytest
 from pathlib import Path
+
+import pytest
 
 
 @pytest.fixture
@@ -106,7 +108,7 @@ def mock_grub_file(tmp_path, mocker):
     grub_file = tmp_path / "grub"
 
     # Mock the GRUB_FILE in the config module
-    mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+    mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
     return grub_file
 
@@ -124,7 +126,7 @@ def mock_os_release(tmp_path, mocker):
             return os_release_file.exists()
         return original_exists(path)
 
-    mocker.patch('os.path.exists', side_effect=mock_exists)
+    mocker.patch("os.path.exists", side_effect=mock_exists)
 
     # Mock file opening for os-release
     original_open = open
@@ -134,6 +136,6 @@ def mock_os_release(tmp_path, mocker):
             return original_open(str(os_release_file), *args, **kwargs)
         return original_open(path, *args, **kwargs)
 
-    mocker.patch('builtins.open', side_effect=mock_open)
+    mocker.patch("builtins.open", side_effect=mock_open)
 
     return os_release_file

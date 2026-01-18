@@ -3,9 +3,10 @@ import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+from . import validation
 from .system import GRUB_FILE
 from .utils import logger
-from . import validation
 
 
 class ConfigManager:
@@ -35,7 +36,7 @@ class ConfigManager:
         if not self.config_file.exists():
             return {}
         try:
-            with open(self.config_file, 'r', encoding='utf-8') as f:
+            with open(self.config_file, "r", encoding="utf-8") as f:
                 loaded_config = json.load(f)
                 if not isinstance(loaded_config, dict):
                     logger.warning("Invalid config format, expected dict")
@@ -56,7 +57,7 @@ class ConfigManager:
         """
         try:
             self.config_dir.mkdir(parents=True, exist_ok=True)
-            with open(self.config_file, 'w', encoding='utf-8') as f:
+            with open(self.config_file, "w", encoding="utf-8") as f:
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
             return True
         except (OSError, IOError) as e:
@@ -91,6 +92,7 @@ class ConfigManager:
         self.config[key] = value
         return self.save_config()
 
+
 class GrubConfig:
     """Reads and writes the /etc/default/grub file.
 
@@ -123,14 +125,14 @@ class GrubConfig:
                 logger.error(f"GRUB file not found: {GRUB_FILE}")
                 return False
 
-            with open(GRUB_FILE, 'r', encoding='utf-8') as f:
+            with open(GRUB_FILE, "r", encoding="utf-8") as f:
                 self.raw_content = f.read()
 
             self.config.clear()
             for line in self.raw_content.splitlines():
                 line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
+                if line and not line.startswith("#") and "=" in line:
+                    key, value = line.split("=", 1)
                     key = key.strip()
                     value = value.strip().strip('"').strip("'")
                     self.config[key] = value
@@ -182,33 +184,37 @@ class GrubConfig:
                 raise ValueError(error_msg)
 
             # Apply specific validation based on key type
-            if key == 'GRUB_TIMEOUT':
+            if key == "GRUB_TIMEOUT":
                 is_valid, error = validation.validate_timeout(value)
                 if not is_valid:
                     error_msg = f"Invalid timeout value: {error}"
                     logger.error(error_msg)
                     raise ValueError(error_msg)
 
-            elif key == 'GRUB_GFXMODE':
+            elif key == "GRUB_GFXMODE":
                 is_valid, error = validation.validate_gfxmode(str(value))
                 if not is_valid:
                     error_msg = f"Invalid graphics mode: {error}"
                     logger.error(error_msg)
                     raise ValueError(error_msg)
 
-            elif key == 'GRUB_BACKGROUND':
+            elif key == "GRUB_BACKGROUND":
                 if value:  # Only validate if not empty
                     is_valid, error = validation.validate_file_path(str(value), must_exist=False)
                     if not is_valid:
                         logger.warning(f"Background path validation: {error}")
 
-            elif key in ['GRUB_DISABLE_OS_PROBER', 'GRUB_DISABLE_RECOVERY',
-                         'GRUB_DISABLE_SUBMENU', 'GRUB_SAVEDEFAULT']:
+            elif key in [
+                "GRUB_DISABLE_OS_PROBER",
+                "GRUB_DISABLE_RECOVERY",
+                "GRUB_DISABLE_SUBMENU",
+                "GRUB_SAVEDEFAULT",
+            ]:
                 is_valid, error = validation.validate_boolean(value)
                 if not is_valid:
                     logger.warning(f"Boolean validation: {error}")
 
-            elif key in ['GRUB_CMDLINE_LINUX', 'GRUB_CMDLINE_LINUX_DEFAULT']:
+            elif key in ["GRUB_CMDLINE_LINUX", "GRUB_CMDLINE_LINUX_DEFAULT"]:
                 # Sanitize kernel command line
                 sanitized, had_changes = validation.sanitize_cmdline(str(value))
                 if had_changes:
@@ -217,8 +223,7 @@ class GrubConfig:
 
         # Sanitize value
         sanitized_value = validation.sanitize_grub_value(
-            value,
-            allow_shell=(key == 'GRUB_DISTRIBUTOR')  # Allow shell constructs for distributor
+            value, allow_shell=(key == "GRUB_DISTRIBUTOR")  # Allow shell constructs for distributor
         )
 
         self.config[key] = sanitized_value
@@ -254,32 +259,32 @@ class GrubConfig:
         for line in self.raw_content.splitlines():
             stripped = line.strip()
 
-            if not stripped or stripped.startswith('#'):
+            if not stripped or stripped.startswith("#"):
                 # Handle commented out keys that we might want to uncomment
-                if stripped.startswith('#') and '=' in stripped:
+                if stripped.startswith("#") and "=" in stripped:
                     comment_content = stripped[1:].strip()
-                    if '=' in comment_content:
-                        key = comment_content.split('=', 1)[0].strip()
+                    if "=" in comment_content:
+                        key = comment_content.split("=", 1)[0].strip()
                         if key in self.config and key not in processed_keys:
                             value = self.config[key]
                             # Add quotes if needed
-                            if ' ' in str(value) or any(c in str(value) for c in ['$', '`', '"']):
+                            if " " in str(value) or any(c in str(value) for c in ["$", "`", '"']):
                                 lines.append(f'{key}="{value}"')
                             else:
-                                lines.append(f'{key}={value}')
+                                lines.append(f"{key}={value}")
                             processed_keys.add(key)
                             continue
                 lines.append(line)
                 continue
 
-            if '=' in stripped:
-                key = stripped.split('=', 1)[0]
+            if "=" in stripped:
+                key = stripped.split("=", 1)[0]
                 if key in self.config:
                     value = self.config[key]
-                    if ' ' in str(value) or any(c in str(value) for c in ['$', '`', '"']):
+                    if " " in str(value) or any(c in str(value) for c in ["$", "`", '"']):
                         lines.append(f'{key}="{value}"')
                     else:
-                        lines.append(f'{key}={value}')
+                        lines.append(f"{key}={value}")
                     processed_keys.add(key)
                 else:
                     lines.append(line)
@@ -289,12 +294,13 @@ class GrubConfig:
         # Add new keys
         for key, value in self.config.items():
             if key not in processed_keys:
-                if ' ' in str(value) or any(c in str(value) for c in ['$', '`', '"']):
+                if " " in str(value) or any(c in str(value) for c in ["$", "`", '"']):
                     lines.append(f'{key}="{value}"')
                 else:
-                    lines.append(f'{key}={value}')
+                    lines.append(f"{key}={value}")
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
+
 
 # Global instance
 config_manager = ConfigManager()

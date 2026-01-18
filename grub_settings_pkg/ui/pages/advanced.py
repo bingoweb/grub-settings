@@ -1,5 +1,7 @@
-from gi.repository import Gtk, Adw
+from gi.repository import Adw, Gtk
+
 from ..widgets import create_help_button
+
 
 class AdvancedPage(Gtk.Box):
     """Advanced settings page"""
@@ -39,7 +41,9 @@ class AdvancedPage(Gtk.Box):
         warning_box.add_css_class("warning-card")
         warning_box.set_margin_bottom(8)
         warning_icon = Gtk.Label(label="⚠️")
-        warning_label = Gtk.Label(label=_("Settings in this section may affect system boot. Be careful!"))
+        warning_label = Gtk.Label(
+            label=_("Settings in this section may affect system boot. Be careful!")
+        )
         warning_label.set_wrap(True)
         warning_box.append(warning_icon)
         warning_box.append(warning_label)
@@ -144,9 +148,7 @@ class AdvancedPage(Gtk.Box):
         if custom:
             params.extend(custom.split())
 
-        values = {
-            "GRUB_CMDLINE_LINUX_DEFAULT": " ".join(params)
-        }
+        values = {"GRUB_CMDLINE_LINUX_DEFAULT": " ".join(params)}
 
         if not self.recovery_switch.get_active():
             values["GRUB_DISABLE_RECOVERY"] = "true"

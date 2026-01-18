@@ -1,8 +1,9 @@
+import logging
 import os
 import shutil
 import subprocess
-import logging
 from typing import Dict, List
+
 from .utils import logger
 
 
@@ -28,7 +29,9 @@ class GrubPaths:
         self.efi_path: str = self._detect_efi_path()
         self.update_cmd: str = self._detect_update_command()
 
-        logger.info(f"Distro: {self.distro_info.get('ID', 'unknown')} ({self.distro_info.get('PRETTY_NAME', 'Unknown Linux')})")
+        logger.info(
+            f"Distro: {self.distro_info.get('ID', 'unknown')} ({self.distro_info.get('PRETTY_NAME', 'Unknown Linux')})"
+        )
         logger.info(f"GRUB Config: {self.grub_cfg}")
         logger.info(f"EFI Path: {self.efi_path}")
         logger.info(f"Update Command: {self.update_cmd}")
@@ -42,10 +45,10 @@ class GrubPaths:
         info: Dict[str, str] = {}
         try:
             if os.path.exists("/etc/os-release"):
-                with open("/etc/os-release", encoding='utf-8') as f:
+                with open("/etc/os-release", encoding="utf-8") as f:
                     for line in f:
-                        if '=' in line:
-                            k, v = line.strip().split('=', 1)
+                        if "=" in line:
+                            k, v = line.strip().split("=", 1)
                             info[k] = v.strip('"')
         except (OSError, IOError) as e:
             logger.warning(f"OS release file I/O error: {e}")
@@ -60,8 +63,8 @@ class GrubPaths:
             str: Path to grub.cfg file
         """
         candidates: List[str] = [
-            "/boot/grub/grub.cfg",      # Debian, Ubuntu, Arch, Linux Mint
-            "/boot/grub2/grub.cfg",     # Fedora, RHEL, SUSE
+            "/boot/grub/grub.cfg",  # Debian, Ubuntu, Arch, Linux Mint
+            "/boot/grub2/grub.cfg",  # Fedora, RHEL, SUSE
             "/boot/efi/EFI/fedora/grub.cfg",
             "/boot/efi/EFI/redhat/grub.cfg",
         ]
@@ -89,16 +92,22 @@ class GrubPaths:
         Returns:
             str: GRUB update command (update-grub, grub-mkconfig, or grub2-mkconfig)
         """
-        distro_id: str = self.distro_info.get('ID', '').lower()
-        distro_like: str = self.distro_info.get('ID_LIKE', '').lower()
+        distro_id: str = self.distro_info.get("ID", "").lower()
+        distro_like: str = self.distro_info.get("ID_LIKE", "").lower()
 
         # Debian/Ubuntu style
         if shutil.which("update-grub"):
             return "update-grub"
 
         # Fedora/RHEL/SUSE style
-        if 'fedora' in distro_id or 'rhel' in distro_id or 'suse' in distro_id or \
-           'fedora' in distro_like or 'rhel' in distro_like or 'suse' in distro_like:
+        if (
+            "fedora" in distro_id
+            or "rhel" in distro_id
+            or "suse" in distro_id
+            or "fedora" in distro_like
+            or "rhel" in distro_like
+            or "suse" in distro_like
+        ):
             if shutil.which("grub2-mkconfig"):
                 return f"grub2-mkconfig -o {self.grub_cfg}"
 
@@ -111,6 +120,7 @@ class GrubPaths:
             return f"grub2-mkconfig -o {self.grub_cfg}"
 
         return "update-grub"  # Default fallback
+
 
 # Global instance for easy access
 PATHS = GrubPaths()

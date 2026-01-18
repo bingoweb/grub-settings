@@ -1,8 +1,11 @@
 """Tests for grub_settings_pkg/config.py - Configuration management."""
+
 import json
-import pytest
 from pathlib import Path
 from unittest.mock import Mock, mock_open, patch
+
+import pytest
+
 from grub_settings_pkg.config import ConfigManager, GrubConfig
 
 
@@ -18,7 +21,7 @@ class TestConfigManager:
 
     def test_load_config_nonexistent_file(self, tmp_path, mocker):
         """Test loading config when file doesn't exist."""
-        mocker.patch.object(Path, 'home', return_value=tmp_path)
+        mocker.patch.object(Path, "home", return_value=tmp_path)
         cm = ConfigManager()
         assert cm.config == {}
 
@@ -30,7 +33,7 @@ class TestConfigManager:
         test_data = {"theme": "dark", "language": "en"}
         config_file.write_text(json.dumps(test_data))
 
-        mocker.patch.object(Path, 'home', return_value=tmp_path)
+        mocker.patch.object(Path, "home", return_value=tmp_path)
         cm = ConfigManager()
         assert cm.config == test_data
 
@@ -41,14 +44,14 @@ class TestConfigManager:
         config_file = config_dir / "settings.json"
         config_file.write_text("{invalid json")
 
-        mocker.patch.object(Path, 'home', return_value=tmp_path)
+        mocker.patch.object(Path, "home", return_value=tmp_path)
         cm = ConfigManager()
         assert cm.config == {}
         assert "Config JSON decode failed" in caplog.text
 
     def test_save_config_creates_directory(self, tmp_path, mocker):
         """Test that save_config creates directory if it doesn't exist."""
-        mocker.patch.object(Path, 'home', return_value=tmp_path)
+        mocker.patch.object(Path, "home", return_value=tmp_path)
         cm = ConfigManager()
         cm.config = {"test": "value"}
         cm.save_config()
@@ -65,7 +68,7 @@ class TestConfigManager:
         config_file = config_dir / "settings.json"
         config_file.write_text('{"old": "data"}')
 
-        mocker.patch.object(Path, 'home', return_value=tmp_path)
+        mocker.patch.object(Path, "home", return_value=tmp_path)
         cm = ConfigManager()
         cm.config = {"new": "data"}
         cm.save_config()
@@ -87,7 +90,7 @@ class TestConfigManager:
 
     def test_set_saves_config(self, tmp_path, mocker):
         """Test that set() saves config to disk."""
-        mocker.patch.object(Path, 'home', return_value=tmp_path)
+        mocker.patch.object(Path, "home", return_value=tmp_path)
         cm = ConfigManager()
         cm.set("theme", "light")
 
@@ -102,14 +105,14 @@ class TestGrubConfig:
 
     def test_init_loads_config(self, mocker):
         """Test that GrubConfig loads on initialization."""
-        mock_load = mocker.patch.object(GrubConfig, 'load', return_value=True)
+        mock_load = mocker.patch.object(GrubConfig, "load", return_value=True)
         gc = GrubConfig()
         assert mock_load.called
 
     def test_load_missing_file(self, tmp_path, mocker, caplog):
         """Test loading when GRUB file doesn't exist."""
         grub_file = tmp_path / "nonexistent"
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         result = gc.load()
@@ -121,9 +124,9 @@ class TestGrubConfig:
         """Test loading with permission error."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("GRUB_DEFAULT=0")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
-        with patch('builtins.open', side_effect=PermissionError):
+        with patch("builtins.open", side_effect=PermissionError):
             gc = GrubConfig()
             result = gc.load()
 
@@ -134,7 +137,7 @@ class TestGrubConfig:
         """Test parsing simple key=value pairs."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("GRUB_DEFAULT=0\nGRUB_TIMEOUT=5\n")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         assert gc.get("GRUB_DEFAULT") == "0"
@@ -144,7 +147,7 @@ class TestGrubConfig:
         """Test parsing values with double quotes."""
         grub_file = tmp_path / "grub"
         grub_file.write_text('GRUB_CMDLINE_LINUX="quiet splash"\n')
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         assert gc.get("GRUB_CMDLINE_LINUX") == "quiet splash"
@@ -153,7 +156,7 @@ class TestGrubConfig:
         """Test parsing values with single quotes."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("GRUB_TIMEOUT_STYLE='menu'\n")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         assert gc.get("GRUB_TIMEOUT_STYLE") == "menu"
@@ -162,7 +165,7 @@ class TestGrubConfig:
         """Test that comment lines are ignored during parsing."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("# This is a comment\nGRUB_DEFAULT=0\n#GRUB_TIMEOUT=10\n")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         assert gc.get("GRUB_DEFAULT") == "0"
@@ -172,7 +175,7 @@ class TestGrubConfig:
         """Test that empty lines are handled correctly."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("\n\nGRUB_DEFAULT=0\n\n\nGRUB_TIMEOUT=5\n\n")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         assert len(gc.config) == 2
@@ -180,8 +183,8 @@ class TestGrubConfig:
     def test_parse_backtick_values(self, tmp_path, mocker):
         """Test parsing values with backticks (command substitution)."""
         grub_file = tmp_path / "grub"
-        grub_file.write_text('GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`\n')
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        grub_file.write_text("GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`\n")
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         # The backticks should be preserved in the value
@@ -191,7 +194,7 @@ class TestGrubConfig:
         """Test parsing values with special characters like $."""
         grub_file = tmp_path / "grub"
         grub_file.write_text('GRUB_CMDLINE_LINUX="quiet $vt_handoff"\n')
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         assert gc.get("GRUB_CMDLINE_LINUX") == "quiet $vt_handoff"
@@ -200,7 +203,7 @@ class TestGrubConfig:
         """Test getting existing GRUB config key."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("GRUB_DEFAULT=0\n")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         assert gc.get("GRUB_DEFAULT") == "0"
@@ -209,7 +212,7 @@ class TestGrubConfig:
         """Test getting nonexistent key returns default."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("GRUB_DEFAULT=0\n")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         assert gc.get("NONEXISTENT") == ""
@@ -219,7 +222,7 @@ class TestGrubConfig:
         """Test setting a new GRUB config value."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         gc.set("GRUB_TIMEOUT", "10")
@@ -230,7 +233,7 @@ class TestGrubConfig:
         """Test that set() updates existing values."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("GRUB_TIMEOUT=5\n")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         gc.set("GRUB_TIMEOUT", "10")
@@ -241,7 +244,7 @@ class TestGrubConfig:
         """Test removing an existing key."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("GRUB_TIMEOUT=5\nGRUB_DEFAULT=0\n")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         gc.remove("GRUB_TIMEOUT")
@@ -253,7 +256,7 @@ class TestGrubConfig:
         """Test removing a nonexistent key doesn't error."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("GRUB_DEFAULT=0\n")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         gc.remove("NONEXISTENT")  # Should not raise error
@@ -263,7 +266,7 @@ class TestGrubConfig:
         grub_file = tmp_path / "grub"
         content = "# This is a comment\nGRUB_DEFAULT=0\n# Another comment\n"
         grub_file.write_text(content)
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         generated = gc.generate_config()
@@ -275,7 +278,7 @@ class TestGrubConfig:
         """Test that generate_config updates existing values."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("GRUB_TIMEOUT=5\n")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         gc.set("GRUB_TIMEOUT", "10")
@@ -288,7 +291,7 @@ class TestGrubConfig:
         """Test that generate_config adds new keys at the end."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("GRUB_DEFAULT=0\n")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         gc.set("GRUB_TIMEOUT", "10")
@@ -301,7 +304,7 @@ class TestGrubConfig:
         """Test that values with spaces are quoted."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         gc.set("GRUB_CMDLINE_LINUX", "quiet splash")
@@ -313,7 +316,7 @@ class TestGrubConfig:
         """Test that values with special chars ($, `, \") are quoted."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         gc.set("GRUB_CMDLINE", "quiet $var")
@@ -325,7 +328,7 @@ class TestGrubConfig:
         """Test that commented options are uncommented when set."""
         grub_file = tmp_path / "grub"
         grub_file.write_text("#GRUB_DISABLE_OS_PROBER=false\n")
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         gc.set("GRUB_DISABLE_OS_PROBER", "false")
@@ -339,21 +342,21 @@ class TestGrubConfig:
         grub_file = tmp_path / "grub"
         content = "GRUB_DEFAULT=0\n\nGRUB_TIMEOUT=5\n"
         grub_file.write_text(content)
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         generated = gc.generate_config()
-        lines = generated.split('\n')
+        lines = generated.split("\n")
 
         # Should have empty line preserved
-        assert '' in lines
+        assert "" in lines
 
     def test_roundtrip_config(self, tmp_path, mocker):
         """Test parsing and regenerating config produces equivalent result."""
         grub_file = tmp_path / "grub"
         content = "# Comment\nGRUB_DEFAULT=0\nGRUB_TIMEOUT=5\n"
         grub_file.write_text(content)
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         generated = gc.generate_config()
@@ -364,8 +367,8 @@ class TestGrubConfig:
         gc2.config.clear()
         for line in gc2.raw_content.splitlines():
             line = line.strip()
-            if line and not line.startswith('#') and '=' in line:
-                key, value = line.split('=', 1)
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
                 gc2.config[key.strip()] = value.strip().strip('"').strip("'")
 
         assert gc.config == gc2.config
@@ -374,7 +377,7 @@ class TestGrubConfig:
         """Test loading Ubuntu default GRUB config."""
         grub_file = tmp_path / "grub"
         grub_file.write_text(ubuntu_grub_config)
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         assert gc.get("GRUB_DEFAULT") == "0"
@@ -386,7 +389,7 @@ class TestGrubConfig:
         """Test loading Fedora default GRUB config."""
         grub_file = tmp_path / "grub"
         grub_file.write_text(fedora_grub_config)
-        mocker.patch('grub_settings_pkg.config.GRUB_FILE', str(grub_file))
+        mocker.patch("grub_settings_pkg.config.GRUB_FILE", str(grub_file))
 
         gc = GrubConfig()
         assert gc.get("GRUB_TIMEOUT") == "5"

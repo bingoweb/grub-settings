@@ -1,5 +1,7 @@
-from gi.repository import Gtk, Adw
+from gi.repository import Adw, Gtk
+
 from ..widgets import create_help_button
+
 
 class TimingPage(Gtk.Box):
     """Timing settings page"""
@@ -137,7 +139,7 @@ class TimingPage(Gtk.Box):
 
         values = {
             "GRUB_TIMEOUT": str(int(self.timeout_scale.get_value())),
-            "GRUB_TIMEOUT_STYLE": style
+            "GRUB_TIMEOUT_STYLE": style,
         }
 
         return values

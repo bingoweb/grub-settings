@@ -1,11 +1,13 @@
 import sys
-from .utils import logger, setup_i18n
-from .config import config_manager
+
 from .app import GrubSettingsApp
+from .config import config_manager
+from .utils import logger, setup_i18n
+
 
 def global_exception_handler(exctype, value, traceback_obj):
-    import traceback
     import os
+    import traceback
     from datetime import datetime
 
     # Use XDG Cache location
@@ -22,6 +24,7 @@ def global_exception_handler(exctype, value, traceback_obj):
     except Exception:
         pass
 
+
 def main():
     sys.excepthook = global_exception_handler
 
@@ -33,6 +36,7 @@ def main():
         app.run(sys.argv)
     except Exception as e:
         global_exception_handler(type(e), e, e.__traceback__)
+
 
 if __name__ == "__main__":
     main()

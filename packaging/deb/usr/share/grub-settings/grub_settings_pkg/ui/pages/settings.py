@@ -1,7 +1,10 @@
 import json
-from gi.repository import Gtk, Adw
-from ...utils import logger, get_path, restart_app
+
+from gi.repository import Adw, Gtk
+
 from ...config import config_manager
+from ...utils import get_path, logger, restart_app
+
 
 class SettingsPage(Gtk.Box):
     """Application settings page - language and theme"""
@@ -55,7 +58,7 @@ class SettingsPage(Gtk.Box):
         for i, lang in enumerate(self.languages):
             display_name = f"{lang['flag']} {lang['native']} ({lang['name']})"
             lang_model.append(display_name)
-            if lang['code'] == current_lang:
+            if lang["code"] == current_lang:
                 selected_idx = i
 
         lang_row.set_model(lang_model)
@@ -75,11 +78,7 @@ class SettingsPage(Gtk.Box):
         theme_row.set_icon_name("preferences-desktop-appearance-symbolic")
 
         theme_model = Gtk.StringList()
-        themes = [
-            (_("System"), "system"),
-            (_("Light"), "light"),
-            (_("Dark"), "dark")
-        ]
+        themes = [(_("System"), "system"), (_("Light"), "light"), (_("Dark"), "dark")]
 
         current_theme = config_manager.get("theme", "system")
         theme_idx = 0
@@ -106,9 +105,12 @@ class SettingsPage(Gtk.Box):
         """Load available languages from languages.json"""
         try:
             lang_file = get_path("locales/languages.json")
-            with open(lang_file, 'r', encoding='utf-8') as f:
+            with open(lang_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                return data.get("available", [{"code": "en", "name": "English", "native": "English", "flag": "🇬🇧"}])
+                return data.get(
+                    "available",
+                    [{"code": "en", "name": "English", "native": "English", "flag": "🇬🇧"}],
+                )
         except Exception as e:
             logger.warning(f"Could not load languages.json: {e}")
             return [{"code": "en", "name": "English", "native": "English", "flag": "🇬🇧"}]
@@ -118,7 +120,7 @@ class SettingsPage(Gtk.Box):
             return
         selected_idx = row.get_selected()
         if selected_idx < len(self.languages):
-            new_lang = self.languages[selected_idx]['code']
+            new_lang = self.languages[selected_idx]["code"]
             current = config_manager.get("language", "en")
 
             if new_lang != current:
@@ -127,7 +129,9 @@ class SettingsPage(Gtk.Box):
 
                 dialog = Adw.MessageDialog.new(self.app.win)
                 dialog.set_heading(_("Restart Required 🔄"))
-                dialog.set_body(_("To apply the new language, I need to make a tiny restart.\nIs that okay? 🥺"))
+                dialog.set_body(
+                    _("To apply the new language, I need to make a tiny restart.\nIs that okay? 🥺")
+                )
                 dialog.add_response("later", _("Later"))
                 dialog.add_response("restart", _("Restart Now"))
                 dialog.set_response_appearance("restart", Adw.ResponseAppearance.SUGGESTED)

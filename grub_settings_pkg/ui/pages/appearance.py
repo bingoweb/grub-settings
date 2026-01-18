@@ -1,8 +1,11 @@
 import os
-from gi.repository import Gtk, Adw, GdkPixbuf, Gdk, Gio, GLib
-from ..widgets import create_help_button, PoliteAuthDialog
-from ...utils import logger, restart_app
+
+from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gtk
+
 from ...config import config_manager
+from ...utils import logger, restart_app
+from ..widgets import PoliteAuthDialog, create_help_button
+
 
 class AppearancePage(Gtk.Box):
     """Appearance settings page"""
@@ -66,7 +69,9 @@ class AppearancePage(Gtk.Box):
         self.preview_image.set_size_request(300, 169)
         self.preview_image.set_content_fit(Gtk.ContentFit.CONTAIN)
 
-        self.no_image_label = Gtk.Label(label=_("🖼️ No background image selected\nClick the button below to select an image"))
+        self.no_image_label = Gtk.Label(
+            label=_("🖼️ No background image selected\nClick the button below to select an image")
+        )
         self.no_image_label.add_css_class("dim-label")
         self.no_image_label.set_justify(Gtk.Justification.CENTER)
 
@@ -119,9 +124,18 @@ class AppearancePage(Gtk.Box):
         res_row.set_subtitle(_("Select a value supported by your graphics card"))
         res_row.add_prefix(create_help_button("resolution", app.win))
 
-        resolutions = ["auto - Automatic", "1920x1080 - Full HD", "1680x1050", "1600x900",
-                       "1440x900", "1366x768 - HD", "1280x1024", "1280x720 - HD",
-                       "1024x768", "800x600"]
+        resolutions = [
+            "auto - Automatic",
+            "1920x1080 - Full HD",
+            "1680x1050",
+            "1600x900",
+            "1440x900",
+            "1366x768 - HD",
+            "1280x1024",
+            "1280x720 - HD",
+            "1024x768",
+            "800x600",
+        ]
         res_model = Gtk.StringList.new(resolutions)
         res_row.set_model(res_model)
 

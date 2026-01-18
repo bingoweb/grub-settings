@@ -1,24 +1,27 @@
 import os
-import tempfile
 import shlex
 import subprocess
-from gi.repository import Gtk, Adw, Gdk, GLib
-from .config import config_manager, GrubConfig
-from .utils import logger, get_sudo_command, get_path
+import tempfile
+
+from gi.repository import Adw, Gdk, GLib, Gtk
+
+from .config import GrubConfig, config_manager
+from .constants import APP_ID, APP_VERSION
 from .system import GRUB_FILE, PATHS
-from .ui.widgets import PoliteAuthDialog
-from .ui.pages.timing import TimingPage
-from .ui.pages.appearance import AppearancePage
-from .ui.pages.system import SystemPage
 from .ui.pages.advanced import AdvancedPage
+from .ui.pages.appearance import AppearancePage
 from .ui.pages.settings import SettingsPage
-from .constants import APP_VERSION, APP_ID
+from .ui.pages.system import SystemPage
+from .ui.pages.timing import TimingPage
+from .ui.widgets import PoliteAuthDialog
+from .utils import get_path, get_sudo_command, logger
+
 
 class GrubSettingsApp(Adw.Application):
     """Main Application Class"""
 
     def __init__(self, **kwargs):
-        kwargs.setdefault('application_id', APP_ID)
+        kwargs.setdefault("application_id", APP_ID)
         super().__init__(**kwargs)
         self.grub_config = GrubConfig()
 
@@ -137,7 +140,7 @@ class GrubSettingsApp(Adw.Application):
             ("🎨", _("Appearance"), _("Background image and resolution")),
             ("💻", _("System"), _("Default OS and dual-boot")),
             ("🔧", _("Advanced"), _("Kernel parameters and recovery")),
-            ("⚙️", _("Settings"), _("Language and theme preferences"))
+            ("⚙️", _("Settings"), _("Language and theme preferences")),
         ]
 
         for icon, title, subtitle in menu_items:
@@ -189,7 +192,9 @@ class GrubSettingsApp(Adw.Application):
         status_bar.set_margin_bottom(8)
 
         status_icon = Gtk.Label(label="ℹ️")
-        status_text = Gtk.Label(label=_("Click the ❓ button next to each setting for detailed explanation."))
+        status_text = Gtk.Label(
+            label=_("Click the ❓ button next to each setting for detailed explanation.")
+        )
         status_text.add_css_class("dim-label")
         status_text.set_wrap(True)
         status_text.set_xalign(0)
@@ -225,9 +230,7 @@ class GrubSettingsApp(Adw.Application):
             css_provider.load_from_data(b".title-1 { font-size: 24px; font-weight: bold; }")
 
         Gtk.StyleContext.add_provider_for_display(
-            self.win.get_display(),
-            css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            self.win.get_display(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
 
     def on_menu_selected(self, listbox, row):
@@ -246,28 +249,34 @@ class GrubSettingsApp(Adw.Application):
         self.grub_config.load()
         dialog = Adw.MessageDialog.new(self.win)
         dialog.set_heading(_("🔄 Reloaded"))
-        dialog.set_body(_("GRUB settings reloaded from disk.\nRestart the app to see external changes."))
+        dialog.set_body(
+            _("GRUB settings reloaded from disk.\nRestart the app to see external changes.")
+        )
         dialog.add_response("ok", _("OK"))
         dialog.present()
 
     def on_about(self, button):
         about = Adw.AboutWindow(
             transient_for=self.win,
-            application_name=APP_ID, # Or nice name
+            application_name=APP_ID,  # Or nice name
             application_icon=APP_ID,
             version=APP_VERSION,
             developer_name="Taylan Soylu",
             website="https://github.com/bingoweb/grub-settings",
             issue_url="https://github.com/bingoweb/grub-settings/issues",
             license_type=Gtk.License.GPL_3_0,
-            copyright="© 2024 Taylan Soylu"
+            copyright="© 2024 Taylan Soylu",
         )
         about.present()
 
     def on_apply(self, button):
         confirm = Adw.MessageDialog.new(self.win)
         confirm.set_heading(_("⚠️ Apply Changes"))
-        confirm.set_body(_("GRUB configuration will be updated.\n\nThis requires root privileges and\nyour current settings will be backed up."))
+        confirm.set_body(
+            _(
+                "GRUB configuration will be updated.\n\nThis requires root privileges and\nyour current settings will be backed up."
+            )
+        )
         confirm.add_response("cancel", _("Cancel"))
         confirm.add_response("apply", _("Apply"))
         confirm.set_response_appearance("apply", Adw.ResponseAppearance.SUGGESTED)
@@ -287,7 +296,9 @@ class GrubSettingsApp(Adw.Application):
 
                 if self.password_timeout_id:
                     GLib.source_remove(self.password_timeout_id)
-                self.password_timeout_id = GLib.timeout_add_seconds(300, self._clear_cached_password)
+                self.password_timeout_id = GLib.timeout_add_seconds(
+                    300, self._clear_cached_password
+                )
 
                 callback()
 
@@ -318,7 +329,13 @@ class GrubSettingsApp(Adw.Application):
         else:
             all_values.update(system_values)
 
-        all_values.update({k: v for k, v in timing_values.items() if k not in ["GRUB_DEFAULT", "GRUB_SAVEDEFAULT"]})
+        all_values.update(
+            {
+                k: v
+                for k, v in timing_values.items()
+                if k not in ["GRUB_DEFAULT", "GRUB_SAVEDEFAULT"]
+            }
+        )
         all_values.update(appearance_values)
         all_values.update(advanced_values)
 
@@ -329,7 +346,9 @@ class GrubSettingsApp(Adw.Application):
 
         new_config = self.grub_config.generate_config()
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, prefix='grub_settings_', suffix='.tmp') as tf:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, prefix="grub_settings_", suffix=".tmp"
+        ) as tf:
             tf.write(new_config)
             temp_file = tf.name
 
@@ -401,9 +420,7 @@ class GrubSettingsApp(Adw.Application):
         """
         css_provider.load_from_data(css.encode())
         Gtk.StyleContext.add_provider_for_display(
-            dialog.get_display(),
-            css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            dialog.get_display(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
 
         return dialog, header, spinner, title_label, textview, buffer
@@ -417,9 +434,7 @@ class GrubSettingsApp(Adw.Application):
             self.term_textview,
             self.term_buffer,
         ) = self._build_terminal_dialog(
-            _("🔄 Updating GRUB..."),
-            f"$ {PATHS.update_cmd}\n\n",
-            hide_on_close=True
+            _("🔄 Updating GRUB..."), f"$ {PATHS.update_cmd}\n\n", hide_on_close=True
         )
         self.term_dialog.present()
 
@@ -452,7 +467,7 @@ class GrubSettingsApp(Adw.Application):
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
-                    bufsize=1
+                    bufsize=1,
                 )
 
                 if self.cached_password and process.stdin:
@@ -476,7 +491,9 @@ class GrubSettingsApp(Adw.Application):
                             return False
                     except Exception as exc:
                         logger.exception("Failed to read GRUB update output", exc_info=exc)
-                        GLib.idle_add(self.append_terminal_line, _("❌ Error reading command output.\n"))
+                        GLib.idle_add(
+                            self.append_terminal_line, _("❌ Error reading command output.\n")
+                        )
                         GLib.idle_add(self.on_command_finished, 1)
                         return False
 
@@ -500,7 +517,9 @@ class GrubSettingsApp(Adw.Application):
             self.term_title.set_label(_("✅ Update Complete"))
             self.has_changes = False
             self.apply_btn.set_sensitive(False)
-            GLib.timeout_add(3000, lambda: (self.term_dialog.close() if self.term_dialog else None, False)[1])
+            GLib.timeout_add(
+                3000, lambda: (self.term_dialog.close() if self.term_dialog else None, False)[1]
+            )
         else:
             self.term_title.set_label(_("❌ Update Failed"))
             close_btn = Gtk.Button(label=_("Close"))
@@ -522,24 +541,30 @@ class GrubSettingsApp(Adw.Application):
             self.term_title,
             self.term_textview,
             self.term_buffer,
-        ) = self._build_terminal_dialog(
-            title,
-            f"$ {title}\n\n"
-        )
+        ) = self._build_terminal_dialog(title, f"$ {title}\n\n")
         self.term_dialog.present()
 
         full_cmd = get_sudo_command() + [cmd]
 
         def run_command():
             try:
-                process = subprocess.Popen(full_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+                process = subprocess.Popen(
+                    full_cmd,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1,
+                )
                 if self.cached_password and process.stdin:
                     try:
                         process.stdin.write(self.cached_password + "\n")
                         process.stdin.flush()
                     except Exception as exc:
                         logger.exception("Failed to send cached password", exc_info=exc)
-                        GLib.idle_add(self.append_terminal_line, _("❌ Failed to send password to command.\n"))
+                        GLib.idle_add(
+                            self.append_terminal_line, _("❌ Failed to send password to command.\n")
+                        )
 
                 def read_output():
                     if not process.stdout:
@@ -560,15 +585,19 @@ class GrubSettingsApp(Adw.Application):
                                 self.term_title.set_label(_("❌ Failed"))
                                 header.set_show_end_title_buttons(True)
 
-                            if callback: callback(success)
+                            if callback:
+                                callback(success)
                             return False
                     except Exception as exc:
                         logger.exception("Failed to read command output", exc_info=exc)
                         GLib.idle_add(self.term_title.set_label, _("❌ Failed"))
-                        GLib.idle_add(self.append_terminal_line, _("❌ Error reading command output.\n"))
+                        GLib.idle_add(
+                            self.append_terminal_line, _("❌ Error reading command output.\n")
+                        )
                         if callback:
                             GLib.idle_add(callback, False)
                         return False
+
                 GLib.timeout_add(50, read_output)
             except Exception as exc:
                 logger.exception("Failed to start command", exc_info=exc)

@@ -1,12 +1,15 @@
 import os
-import threading
-import subprocess
 import shlex
+import subprocess
 import tempfile
-from gi.repository import Gtk, Adw, GLib
-from ..widgets import create_help_button
+import threading
+
+from gi.repository import Adw, GLib, Gtk
+
+from ...system import GRUB_CFG_FILE, PATHS
 from ...utils import logger
-from ...system import PATHS, GRUB_CFG_FILE
+from ..widgets import create_help_button
+
 
 class SystemPage(Gtk.Box):
     """System settings page"""
@@ -67,7 +70,9 @@ class SystemPage(Gtk.Box):
 
         self.windows_info_row = Adw.ActionRow()
         self.windows_info_row.set_title(_("💡 Info"))
-        self.windows_info_row.set_subtitle(_("If OS-Prober cannot detect Windows, you can add it manually."))
+        self.windows_info_row.set_subtitle(
+            _("If OS-Prober cannot detect Windows, you can add it manually.")
+        )
         self.windows_group.add(self.windows_info_row)
 
         content.append(self.windows_group)
@@ -176,7 +181,9 @@ class SystemPage(Gtk.Box):
                 try:
                     result = subprocess.run(
                         ["findmnt", "-n", "-o", "UUID", PATHS.efi_path],
-                        capture_output=True, text=True, timeout=5
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
                     )
                     if result.returncode == 0 and result.stdout.strip():
                         self.efi_uuid = result.stdout.strip()
@@ -192,7 +199,9 @@ class SystemPage(Gtk.Box):
                 try:
                     result = subprocess.run(
                         ["pkexec", "grep", "-l", "Windows", GRUB_CFG_FILE],
-                        capture_output=True, text=True, timeout=10
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
                     )
                     self.windows_in_grub = result.returncode == 0
                 except Exception:
@@ -225,7 +234,9 @@ class SystemPage(Gtk.Box):
                 self.windows_info_row.set_subtitle(_("Click button to add Windows to GRUB menu"))
         else:
             self.windows_status_row.set_title(_("❌ Windows Not Found"))
-            self.windows_status_row.set_subtitle(f"{PATHS.efi_path} - " + _("No Windows boot file found"))
+            self.windows_status_row.set_subtitle(
+                f"{PATHS.efi_path} - " + _("No Windows boot file found")
+            )
             self.windows_action_btn.set_label(_("🔍 Rescan"))
             self.windows_action_btn.remove_css_class("destructive-action")
             self.windows_action_btn.remove_css_class("suggested-action")
@@ -251,7 +262,7 @@ class SystemPage(Gtk.Box):
             dialog.present()
             return
 
-        script_content = f'''#!/bin/sh
+        script_content = f"""#!/bin/sh
 exec tail -n +3 $0
 # Windows Boot Manager - Added by GRUB Settings
 
@@ -261,11 +272,13 @@ menuentry "Windows Boot Manager" --class windows --class os {{
     search --no-floppy --fs-uuid --set=root {self.efi_uuid}
     chainloader /EFI/Microsoft/Boot/bootmgfw.efi
 }}
-'''
+"""
 
         confirm = Adw.MessageDialog.new(self.app.win)
         confirm.set_heading(_("🪟 Add Windows to GRUB"))
-        confirm.set_body(f"{_('Windows Boot Manager will be added to GRUB menu.')}\n\nEFI UUID: {self.efi_uuid}\n\n{_('This action requires root privileges.')}")
+        confirm.set_body(
+            f"{_('Windows Boot Manager will be added to GRUB menu.')}\n\nEFI UUID: {self.efi_uuid}\n\n{_('This action requires root privileges.')}"
+        )
         confirm.add_response("cancel", _("Cancel"))
         confirm.add_response("add", _("Add"))
         confirm.set_response_appearance("add", Adw.ResponseAppearance.SUGGESTED)
@@ -280,11 +293,13 @@ menuentry "Windows Boot Manager" --class windows --class os {{
         self.app.require_auth(lambda: self.perform_add_windows(script_content))
 
     def perform_add_windows(self, script_content):
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, prefix='grub_windows_', suffix='.sh') as tf:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, prefix="grub_windows_", suffix=".sh"
+        ) as tf:
             tf.write(script_content)
             temp_file = tf.name
 
-        cmd = f'''
+        cmd = f"""
             cp {shlex.quote(temp_file)} /etc/grub.d/40_custom_windows &&
             chmod +x /etc/grub.d/40_custom_windows &&
             rm -f {shlex.quote(temp_file)} &&
@@ -294,7 +309,7 @@ menuentry "Windows Boot Manager" --class windows --class os {{
             {PATHS.update_cmd} 2>&1 &&
             echo '' &&
             echo '✅ Done!'
-        '''
+        """
 
         def on_done(success):
             if success:
@@ -310,7 +325,11 @@ menuentry "Windows Boot Manager" --class windows --class os {{
     def remove_windows_from_grub(self):
         confirm = Adw.MessageDialog.new(self.app.win)
         confirm.set_heading(_("🗑️ Remove Windows from Menu"))
-        confirm.set_body(_("Windows Boot Manager will be removed from GRUB menu.\n\nWindows can still be booted from UEFI menu."))
+        confirm.set_body(
+            _(
+                "Windows Boot Manager will be removed from GRUB menu.\n\nWindows can still be booted from UEFI menu."
+            )
+        )
         confirm.add_response("cancel", _("Cancel"))
         confirm.add_response("remove", _("Remove"))
         confirm.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
@@ -325,7 +344,7 @@ menuentry "Windows Boot Manager" --class windows --class os {{
         self.app.require_auth(self.perform_remove_windows)
 
     def perform_remove_windows(self):
-        cmd = f'''
+        cmd = f"""
             rm -f /etc/grub.d/40_custom_windows &&
             echo '✅ Windows script deleted' &&
             echo '' &&
@@ -333,7 +352,7 @@ menuentry "Windows Boot Manager" --class windows --class os {{
             {PATHS.update_cmd} 2>&1 &&
             echo '' &&
             echo '✅ Done!'
-        '''
+        """
 
         def on_done(success):
             if success:
@@ -393,13 +412,11 @@ menuentry "Windows Boot Manager" --class windows --class os {{
 
     def get_grub_menu_entries(self):
         import re
+
         entries = []
         try:
             result = subprocess.run(
-                ["pkexec", "cat", GRUB_CFG_FILE],
-                capture_output=True,
-                text=True,
-                timeout=30
+                ["pkexec", "cat", GRUB_CFG_FILE], capture_output=True, text=True, timeout=30
             )
             if result.returncode == 0:
                 content = result.stdout

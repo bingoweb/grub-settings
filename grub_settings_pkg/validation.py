@@ -3,88 +3,78 @@
 This module provides validation and sanitization functions to ensure
 safe and correct GRUB configuration modifications.
 """
+
 import os
 import re
 from pathlib import Path
 from typing import Any, Optional, Tuple
-from .utils import logger
 
+from .utils import logger
 
 # Allowed GRUB configuration keys (whitelist approach)
 ALLOWED_GRUB_KEYS = {
     # Boot settings
-    'GRUB_DEFAULT',
-    'GRUB_SAVEDEFAULT',
-    'GRUB_TIMEOUT',
-    'GRUB_TIMEOUT_STYLE',
-    'GRUB_HIDDEN_TIMEOUT',
-    'GRUB_HIDDEN_TIMEOUT_QUIET',
-
+    "GRUB_DEFAULT",
+    "GRUB_SAVEDEFAULT",
+    "GRUB_TIMEOUT",
+    "GRUB_TIMEOUT_STYLE",
+    "GRUB_HIDDEN_TIMEOUT",
+    "GRUB_HIDDEN_TIMEOUT_QUIET",
     # Display settings
-    'GRUB_GFXMODE',
-    'GRUB_GFXPAYLOAD_LINUX',
-    'GRUB_TERMINAL',
-    'GRUB_TERMINAL_INPUT',
-    'GRUB_TERMINAL_OUTPUT',
-    'GRUB_BACKGROUND',
-    'GRUB_THEME',
-
+    "GRUB_GFXMODE",
+    "GRUB_GFXPAYLOAD_LINUX",
+    "GRUB_TERMINAL",
+    "GRUB_TERMINAL_INPUT",
+    "GRUB_TERMINAL_OUTPUT",
+    "GRUB_BACKGROUND",
+    "GRUB_THEME",
     # Kernel parameters
-    'GRUB_CMDLINE_LINUX',
-    'GRUB_CMDLINE_LINUX_DEFAULT',
-    'GRUB_CMDLINE_XEN',
-    'GRUB_CMDLINE_XEN_DEFAULT',
-
+    "GRUB_CMDLINE_LINUX",
+    "GRUB_CMDLINE_LINUX_DEFAULT",
+    "GRUB_CMDLINE_XEN",
+    "GRUB_CMDLINE_XEN_DEFAULT",
     # OS detection
-    'GRUB_DISABLE_OS_PROBER',
-    'GRUB_OS_PROBER_SKIP_LIST',
-    'GRUB_DISABLE_SUBMENU',
-
+    "GRUB_DISABLE_OS_PROBER",
+    "GRUB_OS_PROBER_SKIP_LIST",
+    "GRUB_DISABLE_SUBMENU",
     # Recovery mode
-    'GRUB_DISABLE_RECOVERY',
-
+    "GRUB_DISABLE_RECOVERY",
     # Distribution
-    'GRUB_DISTRIBUTOR',
-
+    "GRUB_DISTRIBUTOR",
     # Boot loader
-    'GRUB_ENABLE_BLSCFG',
-    'GRUB_ENABLE_CRYPTODISK',
-
+    "GRUB_ENABLE_BLSCFG",
+    "GRUB_ENABLE_CRYPTODISK",
     # Serial console
-    'GRUB_SERIAL_COMMAND',
-
+    "GRUB_SERIAL_COMMAND",
     # Badram
-    'GRUB_BADRAM',
-
+    "GRUB_BADRAM",
     # Init tune
-    'GRUB_INIT_TUNE',
-
+    "GRUB_INIT_TUNE",
     # Recordfail
-    'GRUB_RECORDFAIL_TIMEOUT',
-
+    "GRUB_RECORDFAIL_TIMEOUT",
     # Linux UUID
-    'GRUB_DISABLE_LINUX_UUID',
-    'GRUB_DISABLE_LINUX_PARTUUID',
+    "GRUB_DISABLE_LINUX_UUID",
+    "GRUB_DISABLE_LINUX_PARTUUID",
 }
 
 
 # Dangerous characters that should be escaped or removed
 DANGEROUS_CHARS = {
-    '\x00',  # Null byte
-    '\r',    # Carriage return (can cause injection)
-    '\n',    # Newline (can cause injection)
+    "\x00",  # Null byte
+    "\r",  # Carriage return (can cause injection)
+    "\n",  # Newline (can cause injection)
 }
 
 # Shell command injection patterns
 SHELL_INJECTION_PATTERNS = [
-    r';',           # Command separator
-    r'\|',          # Pipe
-    r'&&',          # AND operator
-    r'\|\|',        # OR operator
-    r'`',           # Command substitution (allowed in some contexts)
-    r'\$\(',        # Command substitution
-    r'>',           # Redirection
-    r'<',           # Redirection
+    r";",  # Command separator
+    r"\|",  # Pipe
+    r"&&",  # AND operator
+    r"\|\|",  # OR operator
+    r"`",  # Command substitution (allowed in some contexts)
+    r"\$\(",  # Command substitution
+    r">",  # Redirection
+    r"<",  # Redirection
 ]
 
 
@@ -113,7 +103,7 @@ def validate_grub_key(key: Any) -> Tuple[bool, Optional[str]]:
         return False, "Key contains dangerous characters"
 
     # Key should only contain uppercase letters, numbers, and underscores
-    if not re.match(r'^[A-Z_][A-Z0-9_]*$', key):
+    if not re.match(r"^[A-Z_][A-Z0-9_]*$", key):
         return False, "Key must match pattern: ^[A-Z_][A-Z0-9_]*$"
 
     return True, None
@@ -136,7 +126,7 @@ def sanitize_grub_value(value: Any, allow_shell: bool = False) -> str:
 
     # Remove dangerous null bytes and control characters
     for char in DANGEROUS_CHARS:
-        value_str = value_str.replace(char, '')
+        value_str = value_str.replace(char, "")
 
     # Check for shell injection if not allowed
     if not allow_shell:
@@ -184,16 +174,16 @@ def validate_gfxmode(gfxmode: str) -> Tuple[bool, Optional[str]]:
         return False, "Graphics mode cannot be empty"
 
     # Allow special values
-    if gfxmode.lower() in ['auto', 'keep', 'text']:
+    if gfxmode.lower() in ["auto", "keep", "text"]:
         return True, None
 
     # Validate resolution format (e.g., 1920x1080, 1024x768x24)
-    pattern = r'^\d{3,5}x\d{3,5}(x\d{1,2})?$'
+    pattern = r"^\d{3,5}x\d{3,5}(x\d{1,2})?$"
     if not re.match(pattern, gfxmode):
         return False, "Invalid graphics mode format (expected: WIDTHxHEIGHT or WIDTHxHEIGHTxDEPTH)"
 
     # Check reasonable resolution limits
-    parts = gfxmode.split('x')
+    parts = gfxmode.split("x")
     width = int(parts[0])
     height = int(parts[1])
 
@@ -231,7 +221,7 @@ def validate_file_path(path: str, must_exist: bool = False) -> Tuple[bool, Optio
             return False, "Path must be absolute"
 
         # Check for common dangerous paths
-        dangerous_parents = ['/etc/shadow', '/etc/passwd', '/root/.ssh']
+        dangerous_parents = ["/etc/shadow", "/etc/passwd", "/root/.ssh"]
         for dangerous in dangerous_parents:
             if str(resolved).startswith(dangerous):
                 return False, f"Access to {dangerous} is not allowed"
@@ -259,7 +249,7 @@ def validate_boolean(value: Any) -> Tuple[bool, Optional[str]]:
         return True, None
 
     if isinstance(value, str):
-        if value.lower() in ['true', 'false', 'yes', 'no', '1', '0']:
+        if value.lower() in ["true", "false", "yes", "no", "1", "0"]:
             return True, None
 
     return False, "Boolean value must be 'true', 'false', 'yes', 'no', '1', or '0'"
@@ -278,7 +268,7 @@ def sanitize_cmdline(cmdline: str) -> Tuple[str, bool]:
 
     # Remove dangerous null bytes
     for char in DANGEROUS_CHARS:
-        cmdline = cmdline.replace(char, '')
+        cmdline = cmdline.replace(char, "")
 
     # Split into individual parameters
     params = cmdline.split()
@@ -289,12 +279,12 @@ def sanitize_cmdline(cmdline: str) -> Tuple[str, bool]:
         # Allow common kernel parameter patterns
         # name=value or just name
         # Allow $ for variables like $vt_handoff
-        if re.match(r'^[a-zA-Z0-9_\-\.\$]+(?:=[a-zA-Z0-9_\-\.\:\/\,\+\*\$\{\}]+)?$', param):
+        if re.match(r"^[a-zA-Z0-9_\-\.\$]+(?:=[a-zA-Z0-9_\-\.\:\/\,\+\*\$\{\}]+)?$", param):
             safe_params.append(param)
         else:
             logger.warning(f"Suspicious kernel parameter removed: {param}")
 
-    sanitized = ' '.join(safe_params)
-    had_changes = (sanitized != original)
+    sanitized = " ".join(safe_params)
+    had_changes = sanitized != original
 
     return sanitized, had_changes

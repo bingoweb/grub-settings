@@ -1,13 +1,15 @@
-import os
-import sys
-import logging
-import shutil
 import gettext
+import logging
+import os
+import shutil
+import sys
 from pathlib import Path
+
 from .constants import APP_NAME
 
 # Check if running in Flatpak
 IS_FLATPAK = os.path.exists("/.flatpak-info")
+
 
 def get_path(relative_path):
     """Get absolute path to resource, handling development and installed modes."""
@@ -32,6 +34,7 @@ def get_path(relative_path):
 
     return path
 
+
 def setup_logging():
     """Configure logging to file and stream."""
     log_dir = Path.home() / ".cache" / "grub-settings"
@@ -40,15 +43,14 @@ def setup_logging():
 
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(levelname)s: %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
+        format="%(asctime)s - %(levelname)s: %(message)s",
+        handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
     )
     return logging.getLogger(APP_NAME)
 
+
 logger = setup_logging()
+
 
 def setup_i18n(config_manager):
     """Setup internationalization."""
@@ -59,16 +61,18 @@ def setup_i18n(config_manager):
         if saved_lang:
             # Load user preference
             lang_code = "tr" if "tr" in saved_lang else "en"
-            t = gettext.translation('grub-settings', localedir=locales_dir, languages=[lang_code])
+            t = gettext.translation("grub-settings", localedir=locales_dir, languages=[lang_code])
         else:
             # Auto-detect
-            t = gettext.translation('grub-settings', localedir=locales_dir, fallback=True)
+            t = gettext.translation("grub-settings", localedir=locales_dir, fallback=True)
 
-        t.install() # Installs _()
+        t.install()  # Installs _()
     except Exception as e:
         logger.warning(f"i18n setup failed: {e}")
         import builtins
+
         builtins._ = lambda x: x
+
 
 def get_sudo_command():
     """Return the sudo command appropriate for the system."""
@@ -79,15 +83,17 @@ def get_sudo_command():
     else:
         return ["sudo", "-S", "bash", "-c"]
 
+
 def restart_app(app):
     """Restart the application."""
     logger.info("Restarting application...")
     try:
         app.quit()
         import time
+
         time.sleep(0.5)
 
-        if getattr(sys, 'frozen', False):
+        if getattr(sys, "frozen", False):
             os.execl(sys.executable, sys.executable, *sys.argv[1:])
         else:
             python = sys.executable

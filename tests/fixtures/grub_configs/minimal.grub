@@ -1,0 +1,3 @@
+# Minimal GRUB configuration
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=5

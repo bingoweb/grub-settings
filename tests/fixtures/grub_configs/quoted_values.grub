@@ -1,0 +1,8 @@
+# Test file with various quoting styles
+GRUB_DEFAULT=0
+GRUB_TIMEOUT="10"
+GRUB_TIMEOUT_STYLE='menu'
+GRUB_CMDLINE_LINUX="quiet splash acpi_osi=Linux"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash nomodeset"
+GRUB_GFXMODE="1920x1080"
+GRUB_BACKGROUND="/boot/grub/background.jpg"

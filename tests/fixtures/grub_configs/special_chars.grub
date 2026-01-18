@@ -1,0 +1,7 @@
+# Test special characters in values
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=5
+GRUB_CMDLINE_LINUX="quiet splash $vt_handoff"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash init=/bin/bash"
+GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
+GRUB_GFXPAYLOAD_LINUX=keep

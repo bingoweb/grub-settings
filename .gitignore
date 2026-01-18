@@ -7,3 +7,11 @@ __pycache__/
 .flatpak-info
 40_custom_windows
 flathub_pr/
+
+# Test coverage
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+*.cover
+.hypothesis/

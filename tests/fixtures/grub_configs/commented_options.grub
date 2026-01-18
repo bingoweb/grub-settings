@@ -1,0 +1,18 @@
+# GRUB Configuration with commented options
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=5
+GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+
+# This option is commented out
+#GRUB_DISABLE_OS_PROBER=false
+
+# Another commented option
+#GRUB_GFXMODE=1024x768
+
+# Yet another
+#GRUB_BACKGROUND="/usr/share/backgrounds/default.png"
+
+# Multiple commented options
+#GRUB_DISABLE_RECOVERY="true"
+#GRUB_TERMINAL=console

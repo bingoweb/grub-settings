@@ -1,0 +1,300 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 0.1.7)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the latest changes from README
+          CHANGES=$(sed -n '/### v${{ steps.get_version.outputs.version }}/,/### v/p' README.md | sed '$d' | tail -n +2)
+          echo "Changelog extracted from README.md"
+          echo "$CHANGES" > CHANGELOG.txt
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: GRUB Settings v${{ steps.get_version.outputs.version }}
+          body_path: CHANGELOG.txt
+          draft: false
+          prerelease: false
+
+  build-deb:
+    name: Build DEB Package
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev debhelper
+
+      - name: Update version in package
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+
+          # Update control file
+          sed -i "s/Version: .*/Version: $VERSION/" packaging/deb/DEBIAN/control
+
+          # Update constants.py
+          sed -i "s/APP_VERSION = .*/APP_VERSION = \"$VERSION\"/" packaging/deb/usr/share/grub-settings/grub_settings_pkg/constants.py
+
+      - name: Build DEB package
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          PACKAGE_NAME="grub-settings_${VERSION}_all.deb"
+
+          # Set correct permissions
+          chmod 755 packaging/deb/DEBIAN/postinst
+          chmod 755 packaging/deb/DEBIAN/postrm
+          chmod 755 packaging/deb/usr/bin/grub-settings
+
+          # Build package
+          dpkg-deb --build packaging/deb "$PACKAGE_NAME"
+
+          echo "Built: $PACKAGE_NAME"
+          ls -lh "$PACKAGE_NAME"
+
+      - name: Upload DEB to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./grub-settings_${{ needs.create-release.outputs.version }}_all.deb
+          asset_name: grub-settings_${{ needs.create-release.outputs.version }}_all.deb
+          asset_content_type: application/vnd.debian.binary-package
+
+  build-rpm:
+    name: Build RPM Package
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install RPM build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
+
+      - name: Create RPM spec file
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+
+          cat > grub-settings.spec <<EOF
+          Name:           grub-settings
+          Version:        $VERSION
+          Release:        1
+          Summary:        A modern GTK4/Libadwaita GUI for managing GRUB bootloader configuration
+          License:        GPL-3.0-or-later
+          URL:            https://github.com/bingoweb/grub-settings
+          BuildArch:      noarch
+
+          Requires:       python3
+          Requires:       python3-gobject
+          Requires:       gtk4
+          Requires:       libadwaita
+
+          %description
+          GRUB Settings is a modern, user-friendly GUI application for configuring
+          the GRUB bootloader. It provides an intuitive interface to modify GRUB
+          settings without manually editing configuration files.
+
+          Features:
+          - GTK4 + LibAdwaita modern interface
+          - Timing and appearance customization
+          - System and advanced GRUB options
+          - Multi-language support (English, Turkish)
+          - Safe configuration with validation
+
+          %prep
+          # No prep needed
+
+          %build
+          # No build needed (Python application)
+
+          %install
+          mkdir -p %{buildroot}/usr/share/grub-settings
+          mkdir -p %{buildroot}/usr/bin
+          mkdir -p %{buildroot}/usr/share/applications
+          mkdir -p %{buildroot}/usr/share/icons/hicolor/scalable/apps
+
+          # Copy application files
+          cp -r grub_settings_pkg %{buildroot}/usr/share/grub-settings/
+          cp grub_settings.py %{buildroot}/usr/share/grub-settings/
+          cp -r assets %{buildroot}/usr/share/grub-settings/
+          cp -r locales %{buildroot}/usr/share/grub-settings/
+
+          # Update version
+          sed -i 's/APP_VERSION = .*/APP_VERSION = "$VERSION"/' %{buildroot}/usr/share/grub-settings/grub_settings_pkg/constants.py
+
+          # Create launcher script
+          cat > %{buildroot}/usr/bin/grub-settings <<'SCRIPT'
+          #!/bin/bash
+          cd /usr/share/grub-settings
+          python3 grub_settings.py "\$@"
+          SCRIPT
+          chmod 755 %{buildroot}/usr/bin/grub-settings
+
+          # Desktop entry
+          cat > %{buildroot}/usr/share/applications/io.github.taylan.grubsettings.desktop <<DESKTOP
+          [Desktop Entry]
+          Name=GRUB Settings
+          Comment=Configure GRUB bootloader
+          Exec=grub-settings
+          Icon=io.github.taylan.grubsettings
+          Terminal=false
+          Type=Application
+          Categories=System;Settings;
+          Keywords=grub;bootloader;boot;settings;
+          DESKTOP
+
+          # Icon
+          cp assets/icon.svg %{buildroot}/usr/share/icons/hicolor/scalable/apps/io.github.taylan.grubsettings.svg
+
+          %files
+          /usr/share/grub-settings/
+          /usr/bin/grub-settings
+          /usr/share/applications/io.github.taylan.grubsettings.desktop
+          /usr/share/icons/hicolor/scalable/apps/io.github.taylan.grubsettings.svg
+
+          %post
+          update-desktop-database &> /dev/null || :
+          touch --no-create /usr/share/icons/hicolor &> /dev/null || :
+
+          %postun
+          update-desktop-database &> /dev/null || :
+          if [ \$1 -eq 0 ] ; then
+              touch --no-create /usr/share/icons/hicolor &> /dev/null || :
+              gtk-update-icon-cache /usr/share/icons/hicolor &> /dev/null || :
+          fi
+
+          %changelog
+          * $(date "+%a %b %d %Y") Automated Build <github-actions@github.com> - $VERSION-1
+          - Automated build for version $VERSION
+          EOF
+
+      - name: Build RPM package
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+
+          # Create RPM build directories
+          mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+
+          # Copy spec file
+          cp grub-settings.spec ~/rpmbuild/SPECS/
+
+          # Build RPM
+          rpmbuild -bb ~/rpmbuild/SPECS/grub-settings.spec
+
+          # Copy RPM to workspace
+          find ~/rpmbuild/RPMS -name "*.rpm" -exec cp {} ./grub-settings-${VERSION}-1.noarch.rpm \;
+
+          echo "Built: grub-settings-${VERSION}-1.noarch.rpm"
+          ls -lh grub-settings-${VERSION}-1.noarch.rpm
+
+      - name: Upload RPM to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./grub-settings-${{ needs.create-release.outputs.version }}-1.noarch.rpm
+          asset_name: grub-settings-${{ needs.create-release.outputs.version }}-1.noarch.rpm
+          asset_content_type: application/x-rpm
+
+  build-tarball:
+    name: Build Source Tarball
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create source tarball
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          TARBALL_NAME="grub-settings-${VERSION}.tar.gz"
+
+          # Update version in constants.py
+          sed -i "s/APP_VERSION = .*/APP_VERSION = \"$VERSION\"/" grub_settings_pkg/constants.py
+
+          # Create tarball
+          tar -czf "$TARBALL_NAME" \
+            --exclude='.git*' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='.pytest_cache' \
+            --exclude='.mypy_cache' \
+            --exclude='build' \
+            --exclude='dist' \
+            --exclude='*.egg-info' \
+            --transform "s,^,grub-settings-${VERSION}/," \
+            grub_settings.py \
+            grub_settings_pkg/ \
+            assets/ \
+            locales/ \
+            pyproject.toml \
+            requirements-dev.txt \
+            README.md \
+            LICENSE
+
+          echo "Built: $TARBALL_NAME"
+          ls -lh "$TARBALL_NAME"
+
+      - name: Upload tarball to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./grub-settings-${{ needs.create-release.outputs.version }}.tar.gz
+          asset_name: grub-settings-${{ needs.create-release.outputs.version }}.tar.gz
+          asset_content_type: application/gzip

@@ -89,6 +89,7 @@ class AppearancePage(Gtk.Box):
         select_btn.set_child(select_btn_content)
         select_btn.add_css_class("suggested-action")
         select_btn.add_css_class("pill")
+        select_btn.set_tooltip_text(_("Choose a new background image from your files"))
         select_btn.connect("clicked", self.on_select_image)
 
         remove_btn = Gtk.Button()
@@ -98,6 +99,7 @@ class AppearancePage(Gtk.Box):
         remove_btn.set_child(remove_btn_content)
         remove_btn.add_css_class("destructive-action")
         remove_btn.add_css_class("pill")
+        remove_btn.set_tooltip_text(_("Remove the current background image"))
         remove_btn.connect("clicked", self.on_remove_image)
 
         button_box.append(select_btn)
@@ -154,6 +156,7 @@ class AppearancePage(Gtk.Box):
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, 300, 169, True)
             texture = Gdk.Texture.new_for_pixbuf(pixbuf)
             self.preview_image.set_paintable(texture)
+            # Removed set_alternative_text as it requires GTK 4.12+ and could crash on older versions
 
             if self.no_image_label.get_parent():
                 self.preview_box.remove(self.no_image_label)

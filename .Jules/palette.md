@@ -15,3 +15,7 @@
 ## 2026-01-16 - Async Button Feedback
 **Learning:** Blocking subprocess calls freeze the UI without feedback. `Gtk.Button` can temporarily host a `Gtk.Spinner` via `set_child()` to provide inline loading feedback.
 **Action:** For all async button actions, disable button, replace child with spinner, and restore state upon completion.
+
+## 2026-01-20 - Dialog Keyboard Navigation
+**Learning:** `Adw.MessageDialog` does not automatically map Enter to default or Escape to close unless explicitly configured, breaking expected keyboard workflows.
+**Action:** Always set `set_default_response()` and `set_close_response()` when creating message dialogs.

@@ -128,6 +128,12 @@ def create_help_button(help_key, parent_window):
     btn.add_css_class("circular")
     btn.set_valign(Gtk.Align.CENTER)
     btn.set_tooltip_text(_("Get information about this setting"))
+    try:
+        # Accessible label for screen readers
+        btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Get information about this setting")])
+    except AttributeError:
+        # Graceful fallback for older GTK versions
+        pass
 
     def show_help(button):
         dialog = Adw.MessageDialog.new(parent_window)
@@ -135,6 +141,9 @@ def create_help_button(help_key, parent_window):
         dialog.set_body_use_markup(True)
         dialog.set_body(HELP_TEXTS.get(help_key, _("Description not found.")))
         dialog.add_response("ok", _("Got it"))
+        # Enable standard keyboard shortcuts
+        dialog.set_default_response("ok") # Enter
+        dialog.set_close_response("ok")   # Escape
         dialog.present()
 
     btn.connect("clicked", show_help)

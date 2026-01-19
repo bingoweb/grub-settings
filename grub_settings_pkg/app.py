@@ -86,12 +86,20 @@ class GrubSettingsApp(Adw.Application):
         reload_btn = Gtk.Button()
         reload_btn.set_icon_name("view-refresh-symbolic")
         reload_btn.set_tooltip_text(_("Reload Settings"))
+        try:
+            reload_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Reload Settings")])
+        except AttributeError:
+            pass
         reload_btn.connect("clicked", self.on_reload)
         header.pack_start(reload_btn)
 
         about_btn = Gtk.Button()
         about_btn.set_icon_name("help-about-symbolic")
         about_btn.set_tooltip_text(_("About"))
+        try:
+            about_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("About")])
+        except AttributeError:
+            pass
         about_btn.connect("clicked", self.on_about)
         header.pack_start(about_btn)
 
@@ -244,6 +252,8 @@ class GrubSettingsApp(Adw.Application):
         dialog.set_heading(_("🔄 Reloaded"))
         dialog.set_body(_("GRUB settings reloaded from disk.\nRestart the app to see external changes."))
         dialog.add_response("ok", _("OK"))
+        dialog.set_default_response("ok")
+        dialog.set_close_response("ok")
         dialog.present()
 
     def on_about(self, button):
@@ -267,6 +277,8 @@ class GrubSettingsApp(Adw.Application):
         confirm.add_response("cancel", _("Cancel"))
         confirm.add_response("apply", _("Apply"))
         confirm.set_response_appearance("apply", Adw.ResponseAppearance.SUGGESTED)
+        confirm.set_default_response("apply")
+        confirm.set_close_response("cancel")
         confirm.connect("response", self.on_confirm_response)
         confirm.present()
 

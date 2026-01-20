@@ -248,6 +248,8 @@ class SystemPage(Gtk.Box):
             dialog.set_heading(_("❌ EFI UUID Not Found"))
             dialog.set_body(_("Could not retrieve EFI partition UUID. Please try manually."))
             dialog.add_response("ok", _("OK"))
+            dialog.set_default_response("ok")
+            dialog.set_close_response("ok")
             dialog.present()
             return
 
@@ -269,6 +271,8 @@ menuentry "Windows Boot Manager" --class windows --class os {{
         confirm.add_response("cancel", _("Cancel"))
         confirm.add_response("add", _("Add"))
         confirm.set_response_appearance("add", Adw.ResponseAppearance.SUGGESTED)
+        confirm.set_default_response("add")
+        confirm.set_close_response("cancel")
         confirm.connect("response", self.on_add_windows_response, script_content)
         confirm.present()
 
@@ -302,6 +306,8 @@ menuentry "Windows Boot Manager" --class windows --class os {{
                 success_dialog.set_heading(_("✅ Success"))
                 success_dialog.set_body(_("Windows added to GRUB menu."))
                 success_dialog.add_response("ok", _("OK"))
+                success_dialog.set_default_response("ok")
+                success_dialog.set_close_response("ok")
                 success_dialog.present()
                 self.detect_windows()
 
@@ -314,6 +320,8 @@ menuentry "Windows Boot Manager" --class windows --class os {{
         confirm.add_response("cancel", _("Cancel"))
         confirm.add_response("remove", _("Remove"))
         confirm.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
+        confirm.set_default_response("cancel")
+        confirm.set_close_response("cancel")
         confirm.connect("response", self.on_remove_windows_response)
         confirm.present()
 
@@ -341,6 +349,8 @@ menuentry "Windows Boot Manager" --class windows --class os {{
                 success_dialog.set_heading(_("✅ Success"))
                 success_dialog.set_body(_("Windows removed from GRUB menu."))
                 success_dialog.add_response("ok", _("OK"))
+                success_dialog.set_default_response("ok")
+                success_dialog.set_close_response("ok")
                 success_dialog.present()
                 self.detect_windows()
 

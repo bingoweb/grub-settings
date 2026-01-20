@@ -131,6 +131,8 @@ class SettingsPage(Gtk.Box):
                 dialog.add_response("later", _("Later"))
                 dialog.add_response("restart", _("Restart Now"))
                 dialog.set_response_appearance("restart", Adw.ResponseAppearance.SUGGESTED)
+                dialog.set_default_response("restart")
+                dialog.set_close_response("later")
                 dialog.connect("response", self.on_restart_response)
                 dialog.present()
 

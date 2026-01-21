@@ -19,3 +19,7 @@
 ## 2026-01-20 - Dialog Keyboard Navigation
 **Learning:** `Adw.MessageDialog` does not automatically map Enter to default or Escape to close unless explicitly configured, breaking expected keyboard workflows.
 **Action:** Always set `set_default_response()` and `set_close_response()` when creating message dialogs.
+
+## 2024-10-24 - Accessibility Property Compatibility
+**Learning:** `update_property([Gtk.AccessibleProperty.LABEL], ...)` is the correct way to set accessible labels in GTK4 but may fail on older PyGObject versions or specific environments.
+**Action:** Wrap `update_property` calls in `try-except AttributeError` blocks to ensure backward compatibility and prevent crashes.

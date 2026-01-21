@@ -66,11 +66,26 @@ class AppearancePage(Gtk.Box):
         self.preview_image.set_size_request(300, 169)
         self.preview_image.set_content_fit(Gtk.ContentFit.CONTAIN)
 
-        self.no_image_label = Gtk.Label(label=_("🖼️ No background image selected\nClick the button below to select an image"))
-        self.no_image_label.add_css_class("dim-label")
-        self.no_image_label.set_justify(Gtk.Justification.CENTER)
+        # Empty State
+        self.empty_state = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.empty_state.set_valign(Gtk.Align.CENTER)
+        self.empty_state.set_halign(Gtk.Align.CENTER)
 
-        self.preview_box.append(self.no_image_label)
+        empty_icon = Gtk.Image.new_from_icon_name("image-x-generic-symbolic")
+        empty_icon.set_pixel_size(64)
+        empty_icon.add_css_class("dim-label")
+
+        empty_title = Gtk.Label(label=_("No Background Image"))
+        empty_title.add_css_class("title-4")
+
+        empty_subtitle = Gtk.Label(label=_("Click 'Select Image' to add a custom background"))
+        empty_subtitle.add_css_class("dim-label")
+
+        self.empty_state.append(empty_icon)
+        self.empty_state.append(empty_title)
+        self.empty_state.append(empty_subtitle)
+
+        self.preview_box.append(self.empty_state)
         self.preview_frame.set_child(self.preview_box)
         preview_container.append(self.preview_frame)
 
@@ -90,6 +105,10 @@ class AppearancePage(Gtk.Box):
         select_btn.add_css_class("suggested-action")
         select_btn.add_css_class("pill")
         select_btn.set_tooltip_text(_("Choose a new background image from your files"))
+        try:
+            select_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Select Image")])
+        except AttributeError:
+            pass
         select_btn.connect("clicked", self.on_select_image)
 
         remove_btn = Gtk.Button()
@@ -100,6 +119,10 @@ class AppearancePage(Gtk.Box):
         remove_btn.add_css_class("destructive-action")
         remove_btn.add_css_class("pill")
         remove_btn.set_tooltip_text(_("Remove the current background image"))
+        try:
+            remove_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Remove Image")])
+        except AttributeError:
+            pass
         remove_btn.connect("clicked", self.on_remove_image)
 
         button_box.append(select_btn)
@@ -156,10 +179,13 @@ class AppearancePage(Gtk.Box):
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, 300, 169, True)
             texture = Gdk.Texture.new_for_pixbuf(pixbuf)
             self.preview_image.set_paintable(texture)
-            # Removed set_alternative_text as it requires GTK 4.12+ and could crash on older versions
+            try:
+                self.preview_image.update_property([Gtk.AccessibleProperty.LABEL], [_("Preview of selected background image")])
+            except AttributeError:
+                pass
 
-            if self.no_image_label.get_parent():
-                self.preview_box.remove(self.no_image_label)
+            if self.empty_state.get_parent():
+                self.preview_box.remove(self.empty_state)
             if self.preview_image.get_parent() is None:
                 self.preview_box.append(self.preview_image)
 
@@ -198,8 +224,8 @@ class AppearancePage(Gtk.Box):
     def on_remove_image(self, button):
         if self.preview_image.get_parent():
             self.preview_box.remove(self.preview_image)
-        if self.no_image_label.get_parent() is None:
-            self.preview_box.append(self.no_image_label)
+        if self.empty_state.get_parent() is None:
+            self.preview_box.append(self.empty_state)
         self.selected_background = None
         self.app.mark_changed()
 

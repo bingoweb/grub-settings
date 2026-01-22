@@ -42,7 +42,7 @@ class TimingPage(Gtk.Box):
         timeout_row = Adw.ActionRow()
         timeout_row.set_title(_("Duration"))
         timeout_row.set_subtitle(_("0 = Menu hidden, boots immediately"))
-        timeout_row.add_prefix(create_help_button("timeout", app.win))
+        timeout_row.add_prefix(create_help_button("timeout", app.win, _("Timeout Duration")))
 
         slider_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         slider_box.set_valign(Gtk.Align.CENTER)
@@ -85,7 +85,7 @@ class TimingPage(Gtk.Box):
         style_row1 = Adw.ActionRow()
         style_row1.set_title(_("Show Menu"))
         style_row1.set_subtitle(_("GRUB menu is fully visible on every boot"))
-        style_row1.add_prefix(create_help_button("timeout_style", app.win))
+        style_row1.add_prefix(create_help_button("timeout_style", app.win, _("Menu Visibility")))
         self.style_menu = Gtk.CheckButton()
         self.style_menu.set_active(current_style == "menu")
         style_row1.add_suffix(self.style_menu)

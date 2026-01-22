@@ -120,17 +120,23 @@ Old kernels and recovery modes are usually grouped under
 <i>💡 Tip: You can disable this if you frequently access old kernels.</i>""")
 }
 
-def create_help_button(help_key, parent_window):
+def create_help_button(help_key, parent_window, title=None):
     """Create a help button that shows a dialog with explanation."""
     btn = Gtk.Button()
     btn.set_icon_name("dialog-question-symbolic")
     btn.add_css_class("flat")
     btn.add_css_class("circular")
     btn.set_valign(Gtk.Align.CENTER)
-    btn.set_tooltip_text(_("Get information about this setting"))
+
+    if title:
+        text = _("Get information about {}").format(title)
+    else:
+        text = _("Get information about this setting")
+
+    btn.set_tooltip_text(text)
     try:
         # Accessible label for screen readers
-        btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Get information about this setting")])
+        btn.update_property([Gtk.AccessibleProperty.LABEL], [text])
     except AttributeError:
         # Graceful fallback for older GTK versions
         pass

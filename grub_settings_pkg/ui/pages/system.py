@@ -85,7 +85,7 @@ class SystemPage(Gtk.Box):
         self.default_combo = Adw.ComboRow()
         self.default_combo.set_title(_("Default System"))
         self.default_combo.set_subtitle(_("Click refresh to load the menu"))
-        self.default_combo.add_prefix(create_help_button("default_os", app.win))
+        self.default_combo.add_prefix(create_help_button("default_os", app.win, _("Default System")))
 
         self.refresh_btn = Gtk.Button()
         self.refresh_btn.set_icon_name("view-refresh-symbolic")
@@ -120,7 +120,7 @@ class SystemPage(Gtk.Box):
         self.prober_switch = Adw.SwitchRow()
         self.prober_switch.set_title(_("Show Other Operating Systems (OS Prober)"))
         self.prober_switch.set_subtitle(_("Automatically detects Windows and other Linux distros."))
-        self.prober_switch.add_prefix(create_help_button("os_prober", app.win))
+        self.prober_switch.add_prefix(create_help_button("os_prober", app.win, _("OS Detection")))
 
         current_prober = app.grub_config.get("GRUB_DISABLE_OS_PROBER", "true")
         self.prober_switch.set_active(current_prober.lower() == "false")
@@ -144,7 +144,7 @@ class SystemPage(Gtk.Box):
         self.submenu_switch = Adw.SwitchRow()
         self.submenu_switch.set_title(_("Use Submenus"))
         self.submenu_switch.set_subtitle(_("Group old kernels and recovery options in a submenu"))
-        self.submenu_switch.add_prefix(create_help_button("submenu", app.win))
+        self.submenu_switch.add_prefix(create_help_button("submenu", app.win, _("Submenus")))
 
         current_submenu = app.grub_config.get("GRUB_DISABLE_SUBMENU", "")
         self.submenu_switch.set_active(current_submenu.lower() != "true")

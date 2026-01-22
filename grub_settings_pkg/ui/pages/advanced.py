@@ -55,14 +55,14 @@ class AdvancedPage(Gtk.Box):
         self.quiet_switch = Adw.SwitchRow()
         self.quiet_switch.set_title(_("Quiet Boot (quiet)"))
         self.quiet_switch.set_subtitle(_("Hide technical messages, clean boot"))
-        self.quiet_switch.add_prefix(create_help_button("quiet", app.win))
+        self.quiet_switch.add_prefix(create_help_button("quiet", app.win, _("Quiet Boot")))
         self.quiet_switch.set_active("quiet" in current_params)
         self.quiet_switch.connect("notify::active", lambda *a: app.mark_changed())
 
         self.splash_switch = Adw.SwitchRow()
         self.splash_switch.set_title(_("Boot Animation (splash)"))
         self.splash_switch.set_subtitle(_("Beautiful boot screen with logo"))
-        self.splash_switch.add_prefix(create_help_button("splash", app.win))
+        self.splash_switch.add_prefix(create_help_button("splash", app.win, _("Boot Animation")))
         self.splash_switch.set_active("splash" in current_params)
         self.splash_switch.connect("notify::active", lambda *a: app.mark_changed())
 
@@ -78,7 +78,7 @@ class AdvancedPage(Gtk.Box):
         self.recovery_switch = Adw.SwitchRow()
         self.recovery_switch.set_title(_("Show Recovery Mode"))
         self.recovery_switch.set_subtitle(_("Show recovery options in GRUB"))
-        self.recovery_switch.add_prefix(create_help_button("recovery", app.win))
+        self.recovery_switch.add_prefix(create_help_button("recovery", app.win, _("Recovery Mode")))
 
         current_recovery = app.grub_config.get("GRUB_DISABLE_RECOVERY", "")
         self.recovery_switch.set_active(current_recovery.lower() != "true")
@@ -120,7 +120,7 @@ class AdvancedPage(Gtk.Box):
         self.savedefault_switch = Adw.SwitchRow()
         self.savedefault_switch.set_title(_("Remember Last Selection"))
         self.savedefault_switch.set_subtitle(_("The last used OS will be selected on next boot"))
-        self.savedefault_switch.add_prefix(create_help_button("savedefault", app.win))
+        self.savedefault_switch.add_prefix(create_help_button("savedefault", app.win, _("Remember Last Selection")))
 
         current_default = app.grub_config.get("GRUB_DEFAULT", "0")
         self.savedefault_switch.set_active(current_default == "saved")

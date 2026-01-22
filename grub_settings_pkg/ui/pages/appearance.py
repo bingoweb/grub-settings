@@ -47,7 +47,7 @@ class AppearancePage(Gtk.Box):
         info_row = Adw.ActionRow()
         info_row.set_title(_("Supported Formats"))
         info_row.set_subtitle(_("PNG, JPEG, TGA - Should match your screen resolution"))
-        info_row.add_prefix(create_help_button("background", app.win))
+        info_row.add_prefix(create_help_button("background", app.win, _("Background Image")))
         bg_group.add(info_row)
 
         preview_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
@@ -140,7 +140,7 @@ class AppearancePage(Gtk.Box):
         res_row = Adw.ComboRow()
         res_row.set_title(_("Screen Resolution"))
         res_row.set_subtitle(_("Select a value supported by your graphics card"))
-        res_row.add_prefix(create_help_button("resolution", app.win))
+        res_row.add_prefix(create_help_button("resolution", app.win, _("Screen Resolution")))
 
         resolutions = ["auto - Automatic", "1920x1080 - Full HD", "1680x1050", "1600x900",
                        "1440x900", "1366x768 - HD", "1280x1024", "1280x720 - HD",

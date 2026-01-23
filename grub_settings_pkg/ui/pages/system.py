@@ -159,6 +159,13 @@ class SystemPage(Gtk.Box):
     def detect_windows(self):
         """Detect Windows EFI and GRUB status (Background Thread)"""
         self.windows_status_row.set_subtitle(_("⏳ Scanning system..."))
+
+        # UX: Loading state
+        self.windows_action_btn.set_sensitive(False)
+        spinner = Gtk.Spinner()
+        spinner.start()
+        self.windows_action_btn.set_child(spinner)
+
         thread = threading.Thread(target=self._detect_windows_worker)
         thread.daemon = True
         thread.start()
@@ -206,8 +213,13 @@ class SystemPage(Gtk.Box):
 
     def _on_detection_error(self):
         self.windows_status_row.set_subtitle(_("❌ Detection error"))
+        self.windows_action_btn.set_sensitive(True)
+        self.windows_action_btn.set_label(_("Retry"))
+        self.windows_action_btn.remove_css_class("destructive-action")
+        self.windows_action_btn.add_css_class("suggested-action")
 
     def update_windows_ui(self):
+        self.windows_action_btn.set_sensitive(True)
         if self.windows_detected:
             if self.windows_in_grub:
                 self.windows_status_row.set_title(_("✅ Windows Detected and in Menu"))

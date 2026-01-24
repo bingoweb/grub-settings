@@ -60,6 +60,10 @@ class SystemPage(Gtk.Box):
         self.windows_action_btn.set_valign(Gtk.Align.CENTER)
         self.windows_action_btn.add_css_class("suggested-action")
         self.windows_action_btn.add_css_class("pill")
+        try:
+            self.windows_action_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Windows Management Action")])
+        except AttributeError:
+            pass
         self.windows_action_btn.connect("clicked", self.on_windows_action)
         self.windows_status_row.add_suffix(self.windows_action_btn)
 
@@ -91,6 +95,10 @@ class SystemPage(Gtk.Box):
         self.refresh_btn.set_icon_name("view-refresh-symbolic")
         self.refresh_btn.set_valign(Gtk.Align.CENTER)
         self.refresh_btn.set_tooltip_text(_("Load GRUB menu (requires root privileges)"))
+        try:
+            self.refresh_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Refresh GRUB Menu")])
+        except AttributeError:
+            pass
         self.refresh_btn.connect("clicked", self.on_refresh_menu)
         self.default_combo.add_suffix(self.refresh_btn)
 
@@ -162,6 +170,10 @@ class SystemPage(Gtk.Box):
 
         # UX: Loading state
         self.windows_action_btn.set_sensitive(False)
+        try:
+            self.windows_action_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Scanning system...")])
+        except AttributeError:
+            pass
         spinner = Gtk.Spinner()
         spinner.start()
         self.windows_action_btn.set_child(spinner)
@@ -225,6 +237,10 @@ class SystemPage(Gtk.Box):
                 self.windows_status_row.set_title(_("✅ Windows Detected and in Menu"))
                 self.windows_status_row.set_subtitle(f"EFI: {self.windows_efi_path}")
                 self.windows_action_btn.set_label(_("🗑️ Remove from Menu"))
+                try:
+                    self.windows_action_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Remove from Menu")])
+                except AttributeError:
+                    pass
                 self.windows_action_btn.remove_css_class("suggested-action")
                 self.windows_action_btn.add_css_class("destructive-action")
                 self.windows_info_row.set_subtitle(_("Windows is currently visible in GRUB menu"))
@@ -232,6 +248,10 @@ class SystemPage(Gtk.Box):
                 self.windows_status_row.set_title(_("🪟 Windows Detected (Not in Menu)"))
                 self.windows_status_row.set_subtitle(f"EFI: {self.windows_efi_path}")
                 self.windows_action_btn.set_label(_("➕ Add to Menu"))
+                try:
+                    self.windows_action_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Add to Menu")])
+                except AttributeError:
+                    pass
                 self.windows_action_btn.remove_css_class("destructive-action")
                 self.windows_action_btn.add_css_class("suggested-action")
                 self.windows_info_row.set_subtitle(_("Click button to add Windows to GRUB menu"))
@@ -239,6 +259,10 @@ class SystemPage(Gtk.Box):
             self.windows_status_row.set_title(_("❌ Windows Not Found"))
             self.windows_status_row.set_subtitle(f"{PATHS.efi_path} - " + _("No Windows boot file found"))
             self.windows_action_btn.set_label(_("🔍 Rescan"))
+            try:
+                self.windows_action_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Rescan")])
+            except AttributeError:
+                pass
             self.windows_action_btn.remove_css_class("destructive-action")
             self.windows_action_btn.remove_css_class("suggested-action")
             self.windows_info_row.set_subtitle(_("Windows boot manager not found"))

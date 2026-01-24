@@ -23,3 +23,7 @@
 ## 2024-10-24 - Accessibility Property Compatibility
 **Learning:** `update_property([Gtk.AccessibleProperty.LABEL], ...)` is the correct way to set accessible labels in GTK4 but may fail on older PyGObject versions or specific environments.
 **Action:** Wrap `update_property` calls in `try-except AttributeError` blocks to ensure backward compatibility and prevent crashes.
+
+## 2026-01-20 - Button Accessibility in Loading State
+**Learning:** When a `Gtk.Button`'s child is replaced with a `Gtk.Spinner` (via `set_child()`), the button loses its accessible name if it was derived from the child label.
+**Action:** Explicitly set the `accessible-label` property on the button using `update_property()` before replacing its child, ensuring screen readers still identify the button correctly.

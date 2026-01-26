@@ -67,9 +67,24 @@ class AppearancePage(Gtk.Box):
         self.preview_image.set_content_fit(Gtk.ContentFit.CONTAIN)
 
         # Empty State
-        self.empty_state = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        self.empty_state.set_valign(Gtk.Align.CENTER)
-        self.empty_state.set_halign(Gtk.Align.CENTER)
+        # Replaced Gtk.Box with Gtk.Button for better UX (Clickable Empty State)
+        self.empty_state = Gtk.Button()
+        self.empty_state.add_css_class("flat")
+        self.empty_state.set_vexpand(True)
+        self.empty_state.set_hexpand(True)
+        self.empty_state.connect("clicked", self.on_select_image)
+        self.empty_state.set_tooltip_text(_("Click to select a background image"))
+        try:
+            self.empty_state.update_property([Gtk.AccessibleProperty.LABEL], [_("No Background Image. Click to select.")])
+        except AttributeError:
+            pass
+
+        empty_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        empty_content.set_valign(Gtk.Align.CENTER)
+        empty_content.set_halign(Gtk.Align.CENTER)
+        # Add padding to ensure click area is large and comfortable
+        empty_content.set_margin_top(24)
+        empty_content.set_margin_bottom(24)
 
         empty_icon = Gtk.Image.new_from_icon_name("image-x-generic-symbolic")
         empty_icon.set_pixel_size(64)
@@ -81,9 +96,11 @@ class AppearancePage(Gtk.Box):
         empty_subtitle = Gtk.Label(label=_("Click 'Select Image' to add a custom background"))
         empty_subtitle.add_css_class("dim-label")
 
-        self.empty_state.append(empty_icon)
-        self.empty_state.append(empty_title)
-        self.empty_state.append(empty_subtitle)
+        empty_content.append(empty_icon)
+        empty_content.append(empty_title)
+        empty_content.append(empty_subtitle)
+
+        self.empty_state.set_child(empty_content)
 
         self.preview_box.append(self.empty_state)
         self.preview_frame.set_child(self.preview_box)

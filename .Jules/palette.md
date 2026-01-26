@@ -23,3 +23,7 @@
 ## 2024-10-24 - Accessibility Property Compatibility
 **Learning:** `update_property([Gtk.AccessibleProperty.LABEL], ...)` is the correct way to set accessible labels in GTK4 but may fail on older PyGObject versions or specific environments.
 **Action:** Wrap `update_property` calls in `try-except AttributeError` blocks to ensure backward compatibility and prevent crashes.
+
+## 2026-01-22 - Interactive Empty States
+**Learning:** Static empty state placeholders create friction; users expect to click the "No Item" area to create one.
+**Action:** Implement empty states as `Gtk.Button` with `.flat` class and `vexpand/hexpand` to make the entire placeholder area a clickable call-to-action.

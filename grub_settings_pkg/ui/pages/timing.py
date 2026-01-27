@@ -48,6 +48,10 @@ class TimingPage(Gtk.Box):
         slider_box.set_valign(Gtk.Align.CENTER)
 
         self.timeout_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 30, 1)
+        try:
+            self.timeout_scale.update_property([Gtk.AccessibleProperty.LABEL], [_("Timeout Duration in Seconds")])
+        except AttributeError:
+            pass
         self.timeout_scale.set_size_request(200, -1)
         self.timeout_scale.add_mark(0, Gtk.PositionType.BOTTOM, "0")
         self.timeout_scale.add_mark(5, Gtk.PositionType.BOTTOM, "5")

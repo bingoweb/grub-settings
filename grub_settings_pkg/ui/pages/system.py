@@ -91,6 +91,10 @@ class SystemPage(Gtk.Box):
         self.refresh_btn.set_icon_name("view-refresh-symbolic")
         self.refresh_btn.set_valign(Gtk.Align.CENTER)
         self.refresh_btn.set_tooltip_text(_("Load GRUB menu (requires root privileges)"))
+        try:
+            self.refresh_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Load GRUB menu")])
+        except AttributeError:
+            pass
         self.refresh_btn.connect("clicked", self.on_refresh_menu)
         self.default_combo.add_suffix(self.refresh_btn)
 

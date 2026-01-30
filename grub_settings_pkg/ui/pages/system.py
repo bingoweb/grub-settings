@@ -91,6 +91,10 @@ class SystemPage(Gtk.Box):
         self.refresh_btn.set_icon_name("view-refresh-symbolic")
         self.refresh_btn.set_valign(Gtk.Align.CENTER)
         self.refresh_btn.set_tooltip_text(_("Load GRUB menu (requires root privileges)"))
+        try:
+            self.refresh_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Refresh GRUB Menu")])
+        except AttributeError:
+            pass
         self.refresh_btn.connect("clicked", self.on_refresh_menu)
         self.default_combo.add_suffix(self.refresh_btn)
 
@@ -162,6 +166,11 @@ class SystemPage(Gtk.Box):
 
         # UX: Loading state
         self.windows_action_btn.set_sensitive(False)
+        try:
+            self.windows_action_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Scanning system...")])
+        except AttributeError:
+            pass
+
         spinner = Gtk.Spinner()
         spinner.start()
         self.windows_action_btn.set_child(spinner)
@@ -372,6 +381,11 @@ menuentry "Windows Boot Manager" --class windows --class os {{
         # UX: Add loading state to button
         self.refresh_btn.set_sensitive(False)
 
+        try:
+            self.refresh_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Loading GRUB menu...")])
+        except AttributeError:
+            pass
+
         # Add spinner
         spinner = Gtk.Spinner()
         spinner.start()
@@ -396,6 +410,10 @@ menuentry "Windows Boot Manager" --class windows --class os {{
         self.refresh_btn.set_child(None)
         self.refresh_btn.set_icon_name("view-refresh-symbolic")
         self.refresh_btn.set_sensitive(True)
+        try:
+            self.refresh_btn.update_property([Gtk.AccessibleProperty.LABEL], [_("Refresh GRUB Menu")])
+        except AttributeError:
+            pass
 
         if entries and entries[0] != "0 - First Option":
             self.menu_entries = entries

@@ -53,6 +53,10 @@ class TimingPage(Gtk.Box):
         self.timeout_scale.add_mark(5, Gtk.PositionType.BOTTOM, "5")
         self.timeout_scale.add_mark(10, Gtk.PositionType.BOTTOM, "10")
         self.timeout_scale.add_mark(30, Gtk.PositionType.BOTTOM, "30")
+        try:
+            self.timeout_scale.update_property([Gtk.AccessibleProperty.LABEL], [_("Timeout Duration")])
+        except AttributeError:
+            pass
 
         current_timeout = 0
         try:

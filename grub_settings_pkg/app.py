@@ -2,6 +2,7 @@ import os
 import tempfile
 import shlex
 import subprocess
+import threading
 from gi.repository import Gtk, Adw, Gdk, GLib
 from .config import config_manager, GrubConfig
 from .utils import logger, get_sudo_command, get_path
@@ -470,23 +471,20 @@ class GrubSettingsApp(Adw.Application):
                     except BrokenPipeError:
                         pass
 
-                def read_output():
+                def read_output_thread():
                     try:
-                        line = process.stdout.readline()
-                        if line:
+                        for line in process.stdout:
                             GLib.idle_add(self.append_terminal_line, line)
-                            return True
-                        else:
-                            process.wait()
-                            GLib.idle_add(self.on_command_finished, process.returncode)
-                            return False
+
+                        return_code = process.wait()
+                        GLib.idle_add(self.on_command_finished, return_code)
                     except Exception as exc:
                         logger.exception("Failed to read GRUB update output", exc_info=exc)
                         GLib.idle_add(self.append_terminal_line, _("❌ Error reading command output.\n"))
                         GLib.idle_add(self.on_command_finished, 1)
-                        return False
 
-                GLib.timeout_add(50, read_output)
+                threading.Thread(target=read_output_thread, daemon=True).start()
+
             except Exception as exc:
                 logger.exception("Failed to start GRUB update command", exc_info=exc)
                 GLib.idle_add(self.append_terminal_line, _("❌ Failed to start update command.\n"))
@@ -547,33 +545,36 @@ class GrubSettingsApp(Adw.Application):
                         logger.exception("Failed to send cached password", exc_info=exc)
                         GLib.idle_add(self.append_terminal_line, _("❌ Failed to send password to command.\n"))
 
-                def read_output():
+                def read_output_thread():
                     try:
-                        line = process.stdout.readline()
-                        if line:
+                        for line in process.stdout:
                             GLib.idle_add(self.append_terminal_line, line)
-                            return True
-                        else:
-                            process.wait()
+
+                        process.wait()
+                        success = process.returncode == 0
+
+                        def on_finished():
                             self.term_spinner.stop()
-                            success = process.returncode == 0
                             if success:
                                 self.term_title.set_label(_("✅ Done"))
                                 GLib.timeout_add(2000, lambda: (self.term_dialog.close(), False)[1])
                             else:
                                 self.term_title.set_label(_("❌ Failed"))
                                 header.set_show_end_title_buttons(True)
-
-                            if callback: callback(success)
+                            if callback:
+                                callback(success)
                             return False
+
+                        GLib.idle_add(on_finished)
                     except Exception as exc:
                         logger.exception("Failed to read command output", exc_info=exc)
                         GLib.idle_add(self.term_title.set_label, _("❌ Failed"))
                         GLib.idle_add(self.append_terminal_line, _("❌ Error reading command output.\n"))
                         if callback:
                             GLib.idle_add(callback, False)
-                        return False
-                GLib.timeout_add(50, read_output)
+
+                threading.Thread(target=read_output_thread, daemon=True).start()
+
             except Exception as exc:
                 logger.exception("Failed to start command", exc_info=exc)
                 GLib.idle_add(self.term_title.set_label, _("❌ Failed"))

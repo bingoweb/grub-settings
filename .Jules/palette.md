@@ -23,3 +23,7 @@
 ## 2024-10-24 - Accessibility Property Compatibility
 **Learning:** `update_property([Gtk.AccessibleProperty.LABEL], ...)` is the correct way to set accessible labels in GTK4 but may fail on older PyGObject versions or specific environments.
 **Action:** Wrap `update_property` calls in `try-except AttributeError` blocks to ensure backward compatibility and prevent crashes.
+
+## 2026-01-20 - Subprocess UI Responsiveness
+**Learning:** Polling subprocess output with `GLib.timeout_add` + `readline()` causes UI freezes/jank if the pipe blocks or buffers.
+**Action:** Use a background thread to iterate over `process.stdout` and push updates via `GLib.idle_add` for smooth, responsive terminal dialogs.

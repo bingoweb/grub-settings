@@ -23,3 +23,7 @@
 ## 2024-10-24 - Accessibility Property Compatibility
 **Learning:** `update_property([Gtk.AccessibleProperty.LABEL], ...)` is the correct way to set accessible labels in GTK4 but may fail on older PyGObject versions or specific environments.
 **Action:** Wrap `update_property` calls in `try-except AttributeError` blocks to ensure backward compatibility and prevent crashes.
+
+## 2024-05-27 - Dynamic Validation Warnings
+**Learning:** Constant warnings for potential configuration issues add visual noise. Warnings for invalid states (like disabling safety features) should be dynamically toggled.
+**Action:** Use `set_visible()` tied to `notify::active` signals to show/hide validation warnings in settings pages.

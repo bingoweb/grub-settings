@@ -56,20 +56,34 @@ class AppearancePage(Gtk.Box):
 
         self.preview_frame = Gtk.Frame()
         self.preview_frame.set_size_request(-1, 180)
-        self.preview_frame.add_css_class("card")
+        # Initially dashed when empty
+        self.preview_frame.add_css_class("preview-frame")
 
         self.preview_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.preview_box.set_valign(Gtk.Align.CENTER)
-        self.preview_box.set_halign(Gtk.Align.CENTER)
+        # Fill to allow button to expand to full frame size
+        self.preview_box.set_valign(Gtk.Align.FILL)
+        self.preview_box.set_halign(Gtk.Align.FILL)
 
         self.preview_image = Gtk.Picture()
         self.preview_image.set_size_request(300, 169)
         self.preview_image.set_content_fit(Gtk.ContentFit.CONTAIN)
 
-        # Empty State
-        self.empty_state = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        self.empty_state.set_valign(Gtk.Align.CENTER)
-        self.empty_state.set_halign(Gtk.Align.CENTER)
+        # Empty State (Interactive Button)
+        self.empty_state = Gtk.Button()
+        self.empty_state.add_css_class("flat")
+        self.empty_state.set_vexpand(True)
+        self.empty_state.set_hexpand(True)
+        self.empty_state.set_tooltip_text(_("Click to select a background image"))
+        try:
+            self.empty_state.update_property([Gtk.AccessibleProperty.LABEL], [_("Select Background Image")])
+        except AttributeError:
+            pass
+        self.empty_state.connect("clicked", self.on_select_image)
+
+        # Content inside the button
+        empty_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        empty_content.set_valign(Gtk.Align.CENTER)
+        empty_content.set_halign(Gtk.Align.CENTER)
 
         empty_icon = Gtk.Image.new_from_icon_name("image-x-generic-symbolic")
         empty_icon.set_pixel_size(64)
@@ -81,9 +95,11 @@ class AppearancePage(Gtk.Box):
         empty_subtitle = Gtk.Label(label=_("Click 'Select Image' to add a custom background"))
         empty_subtitle.add_css_class("dim-label")
 
-        self.empty_state.append(empty_icon)
-        self.empty_state.append(empty_title)
-        self.empty_state.append(empty_subtitle)
+        empty_content.append(empty_icon)
+        empty_content.append(empty_title)
+        empty_content.append(empty_subtitle)
+
+        self.empty_state.set_child(empty_content)
 
         self.preview_box.append(self.empty_state)
         self.preview_frame.set_child(self.preview_box)
@@ -189,6 +205,10 @@ class AppearancePage(Gtk.Box):
             if self.preview_image.get_parent() is None:
                 self.preview_box.append(self.preview_image)
 
+            # Update frame style: solid card for image
+            self.preview_frame.remove_css_class("preview-frame")
+            self.preview_frame.add_css_class("card")
+
             self.selected_background = path
             if mark_as_changed:
                 self.app.mark_changed()
@@ -226,6 +246,11 @@ class AppearancePage(Gtk.Box):
             self.preview_box.remove(self.preview_image)
         if self.empty_state.get_parent() is None:
             self.preview_box.append(self.empty_state)
+
+        # Update frame style: dashed for empty state
+        self.preview_frame.add_css_class("preview-frame")
+        self.preview_frame.remove_css_class("card")
+
         self.selected_background = None
         self.app.mark_changed()
 

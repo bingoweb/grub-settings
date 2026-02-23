@@ -67,17 +67,22 @@ class AppearancePage(Gtk.Box):
         self.preview_image = Gtk.Picture()
         self.preview_image.set_size_request(300, 169)
         self.preview_image.set_content_fit(Gtk.ContentFit.CONTAIN)
+        self.preview_image.set_halign(Gtk.Align.CENTER)
+        self.preview_image.set_valign(Gtk.Align.CENTER)
 
+        # Empty State
         # Empty State (Interactive Button)
         self.empty_state = Gtk.Button()
         self.empty_state.add_css_class("flat")
         self.empty_state.set_vexpand(True)
         self.empty_state.set_hexpand(True)
         self.empty_state.set_tooltip_text(_("Click to select a background image"))
+        self.empty_state.connect("clicked", self.on_select_image)
         try:
             self.empty_state.update_property([Gtk.AccessibleProperty.LABEL], [_("Select Background Image")])
         except AttributeError:
             pass
+
         self.empty_state.connect("clicked", self.on_select_image)
 
         # Content inside the button
@@ -101,6 +106,7 @@ class AppearancePage(Gtk.Box):
 
         self.empty_state.set_child(empty_content)
 
+        self.empty_state.set_child(empty_content)
         self.preview_box.append(self.empty_state)
         self.preview_frame.set_child(self.preview_box)
         preview_container.append(self.preview_frame)

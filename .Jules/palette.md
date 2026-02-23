@@ -24,6 +24,9 @@
 **Learning:** `update_property([Gtk.AccessibleProperty.LABEL], ...)` is the correct way to set accessible labels in GTK4 but may fail on older PyGObject versions or specific environments.
 **Action:** Wrap `update_property` calls in `try-except AttributeError` blocks to ensure backward compatibility and prevent crashes.
 
+## 2026-01-24 - Interactive Empty States
+**Learning:** Static empty state boxes miss a chance for direct interaction. Making the entire empty state area a clickable `Gtk.Button` (with `.flat` style) significantly improves discoverability and reduces friction.
+**Action:** Replace static `Gtk.Box` empty states with `Gtk.Button` widgets that trigger the primary creation/addition action.
 ## 2026-01-22 - Interactive Empty States
 **Learning:** Static empty states (labels/icons) have poor discoverability. Wrapping them in a flat `Gtk.Button` with `vexpand`/`hexpand` creates a large, clickable "drop zone" that reduces friction.
 **Action:** Use `Gtk.Button` with `.flat` class and full expansion for interactive empty states instead of static `Gtk.Box`.

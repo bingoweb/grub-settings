@@ -42,3 +42,7 @@
 ## 2026-01-22 - Interactive Empty States
 **Learning:** Static empty states (labels/icons) have poor discoverability. Wrapping them in a flat `Gtk.Button` with `vexpand`/`hexpand` creates a large, clickable "drop zone" that reduces friction.
 **Action:** Use `Gtk.Button` with `.flat` class and full expansion for interactive empty states instead of static `Gtk.Box`.
+
+## 2026-01-22 - Missing Signal Connections on Form Widgets
+**Learning:** Form widgets like `Gtk.CheckButton` or `Adw.ComboRow` do not automatically trigger application state changes (like enabling an 'Apply' button). Explicit signal connection (e.g., `toggled`, `notify::selected`) is required.
+**Action:** Always connect relevant signals to state change handlers immediately after widget creation to ensure UI responsiveness.

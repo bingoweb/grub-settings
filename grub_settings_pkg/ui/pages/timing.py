@@ -92,6 +92,7 @@ class TimingPage(Gtk.Box):
         style_row1.add_prefix(create_help_button("timeout_style", app.win, _("Menu Visibility")))
         self.style_menu = Gtk.CheckButton()
         self.style_menu.set_active(current_style == "menu")
+        self.style_menu.connect("toggled", lambda b: app.mark_changed())
         style_row1.add_suffix(self.style_menu)
         style_row1.set_activatable_widget(self.style_menu)
 
@@ -101,6 +102,7 @@ class TimingPage(Gtk.Box):
         self.style_hidden = Gtk.CheckButton()
         self.style_hidden.set_group(self.style_menu)
         self.style_hidden.set_active(current_style == "hidden")
+        self.style_hidden.connect("toggled", lambda b: app.mark_changed())
         style_row2.add_suffix(self.style_hidden)
         style_row2.set_activatable_widget(self.style_hidden)
 
@@ -110,6 +112,7 @@ class TimingPage(Gtk.Box):
         self.style_countdown = Gtk.CheckButton()
         self.style_countdown.set_group(self.style_menu)
         self.style_countdown.set_active(current_style == "countdown")
+        self.style_countdown.connect("toggled", lambda b: app.mark_changed())
         style_row3.add_suffix(self.style_countdown)
         style_row3.set_activatable_widget(self.style_countdown)
 

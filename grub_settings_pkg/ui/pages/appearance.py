@@ -197,6 +197,7 @@ class AppearancePage(Gtk.Box):
 
         self.res_row = res_row
         self.resolutions = resolutions
+        res_row.connect("notify::selected", lambda *a: app.mark_changed())
         res_group.add(res_row)
         content.append(res_group)
 

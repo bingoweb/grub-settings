@@ -24,6 +24,9 @@
 **Learning:** `update_property([Gtk.AccessibleProperty.LABEL], ...)` is the correct way to set accessible labels in GTK4 but may fail on older PyGObject versions or specific environments.
 **Action:** Wrap `update_property` calls in `try-except AttributeError` blocks to ensure backward compatibility and prevent crashes.
 
+## 2026-01-22 - Dependent Settings Validation
+**Learning:** Users can misconfigure dependent settings (e.g., Visibility=Hidden + Timeout=0) leading to lockout states.
+**Action:** Add real-time validation for dependent settings and display an `Adw.ActionRow` with `.warning` class to guide correction.
 ## 2026-01-24 - Actionable Empty States
 **Learning:** Static empty states are missed opportunities; users expect large placeholders to be actionable (e.g. click to add).
 **Action:** Wrap empty state content in a flat `Gtk.Button` that triggers the primary "Add" action to improve discoverability.

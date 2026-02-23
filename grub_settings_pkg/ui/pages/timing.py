@@ -113,13 +113,43 @@ class TimingPage(Gtk.Box):
         style_row3.add_suffix(self.style_countdown)
         style_row3.set_activatable_widget(self.style_countdown)
 
+        # UX: Warning for Hidden/Countdown style with 0 timeout
+        self.warning_row = Adw.ActionRow()
+        self.warning_row.set_title(_("⚠️ Configuration Warning"))
+        self.warning_row.set_subtitle(_("Timeout must be greater than 0 for this visibility style."))
+        self.warning_row.add_css_class("warning")
+        self.warning_row.set_visible(False)
+        style_group.add(self.warning_row)
+
+        # Connect signals for style changes
+        self.style_menu.connect("toggled", self.on_style_changed)
+        self.style_hidden.connect("toggled", self.on_style_changed)
+        self.style_countdown.connect("toggled", self.on_style_changed)
+
         style_group.add(style_row1)
         style_group.add(style_row2)
         style_group.add(style_row3)
         content.append(style_group)
 
+        # Initial validation state
+        self.update_warning_state()
+
         scrolled.set_child(content)
         self.append(scrolled)
+
+    def update_warning_state(self):
+        style_hidden = self.style_hidden.get_active()
+        style_countdown = self.style_countdown.get_active()
+        timeout = int(self.timeout_scale.get_value())
+
+        # If hidden or countdown style is selected, timeout must be > 0
+        show_warning = (style_hidden or style_countdown) and timeout == 0
+        self.warning_row.set_visible(show_warning)
+
+    def on_style_changed(self, button):
+        self.update_warning_state()
+        if button.get_active():
+            self.app.mark_changed()
 
     def update_timeout_label(self, value):
         if value == 0:
@@ -130,6 +160,7 @@ class TimingPage(Gtk.Box):
     def on_timeout_changed(self, scale):
         value = int(scale.get_value())
         self.update_timeout_label(value)
+        self.update_warning_state()
         self.app.mark_changed()
 
     def get_values(self):

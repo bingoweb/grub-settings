@@ -128,15 +128,16 @@ class SystemPage(Gtk.Box):
 
         current_prober = app.grub_config.get("GRUB_DISABLE_OS_PROBER", "true")
         self.prober_switch.set_active(current_prober.lower() == "false")
-        self.prober_switch.connect("notify::active", lambda *a: app.mark_changed())
+        self.prober_switch.connect("notify::active", self.on_prober_toggled)
 
         prober_group.add(self.prober_switch)
 
-        prober_warning = Adw.ActionRow()
-        prober_warning.set_title(_("⚠️ Dual-boot Users"))
-        prober_warning.set_subtitle(_("This must be enabled if you have Windows or another OS!"))
-        prober_warning.add_css_class("warning")
-        prober_group.add(prober_warning)
+        self.prober_warning = Adw.ActionRow()
+        self.prober_warning.set_title(_("⚠️ Dual-boot Users"))
+        self.prober_warning.set_subtitle(_("This must be enabled if you have Windows or another OS!"))
+        self.prober_warning.add_css_class("warning")
+        self.prober_warning.set_visible(not self.prober_switch.get_active())
+        prober_group.add(self.prober_warning)
 
         content.append(prober_group)
 
@@ -457,6 +458,10 @@ menuentry "Windows Boot Manager" --class windows --class os {{
             entries = [_("0 - First Option"), _("1 - Second Option"), _("2 - Third Option")]
 
         return entries
+
+    def on_prober_toggled(self, switch, gparam):
+        self.app.mark_changed()
+        self.prober_warning.set_visible(not switch.get_active())
 
     def get_values(self):
         values = {}
